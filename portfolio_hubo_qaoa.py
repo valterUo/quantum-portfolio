@@ -1,122 +1,22 @@
 import itertools
 import pennylane as qml
 from pennylane import numpy as np
-import scipy
+
+from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
+from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)
 from pennylane.transforms import compile
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.typing import PostprocessingFn
-
 from pypfopt import EfficientFrontier
 
-def replace_h_rz_h_with_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    new_operations = []
-    i = 0
-    while i < len(tape.operations):
-        op = tape.operations[i]
-
-        # Detect pattern: H . RZ . H
-        if (
-            i + 2 < len(tape.operations)
-            and op.name == "Hadamard"
-            and tape.operations[i + 1].name == "RZ"
-            and tape.operations[i + 2].name == "Hadamard"
-            and op.wires == tape.operations[i + 1].wires == tape.operations[i + 2].wires
-        ):
-            rz_angle = tape.operations[i + 1].parameters[0]
-            rx_angle = rz_angle  # RX(angle) = H . RZ(angle) . H
-            new_operations.append(qml.RX(rx_angle, wires=op.wires[0]))
-
-            # Skip the next two gates since they are replaced
-            i += 3
-        else:
-            new_operations.append(op)
-            i += 1
-
-    # Create new transformed tape
-    new_tape = tape.copy(operations=new_operations)
-
-    def null_postprocessing(results):
-        return results[0]
-
-    return [new_tape], null_postprocessing
-
-
-def smallest_eigenpairs(A):
-    """
-    Return the smallest eigenvalues and eigenvectors of a matrix A
-    Returns always at least two eigenvalues and eigenvectors, 
-    even if the second solution is not optimal.
-    The non-zero difference between the two smallest eigenvalues 
-    can describe hardness of the optimization problem.
-    """
-
-    eigenvalues, eigenvectors = scipy.linalg.eig(A)
-    eigenvalues = np.real(eigenvalues)
-    eigenvectors = np.real(eigenvectors)
-    idx = np.argsort(eigenvalues)
-    smallest_eigenvalues = []
-    smallest_eigenvectors = []
-
-    smallest_eigenvalue = eigenvalues[idx[0]]
-    smallest_eigenvalues.append(smallest_eigenvalue)
-    smallest_eigenvectors.append(eigenvectors[:, idx[0]])
-
-    first_excited_energy = None
-    first_excited_state = None
-    
-    # Find all smallest eigenvalues and eigenvectors
-    for i in range(1, len(eigenvalues)):
-        if eigenvalues[idx[i]] == smallest_eigenvalue:
-            smallest_eigenvalues.append(eigenvalues[idx[i]])
-            smallest_eigenvectors.append(eigenvectors[:, idx[i]])
-        else:
-            first_excited_energy = eigenvalues[idx[i]]
-            first_excited_state = eigenvectors[:, idx[i]]
-            break  
-    
-    return smallest_eigenvalues, smallest_eigenvectors, first_excited_energy, first_excited_state
-
-
-def bitstring_to_int(bit_string_sample):
-    if type(bit_string_sample[0]) == str:
-        bit_string_sample = np.array([int(i) for i in bit_string_sample])
-    return int(2 ** np.arange(len(bit_string_sample)) @ bit_string_sample)
-
-def int_to_bitstring(int_sample, n_qubits):
-    bits = np.array([int(i) for i in format(int_sample, f'0{n_qubits}b')])
-    return "".join([str(i) for i in bits])
-
-
-def basis_vector_to_bitstring(basis_vector):
-    assert np.sum(basis_vector) == 1, "Input must be a basis vector"
-    # I think the basis vector returned from scipy.linalg.eig is "turned around"
-    index = np.argmax(basis_vector[::-1])
-    num_qubits = max(int(np.log2(len(basis_vector))), 1)
-    bitstring = format(index, f'0{num_qubits}b')
-    #bitstring = np.array(list(np.binary_repr(index).zfill(num_qubits)))
-    bitstring = [int(i) for i in bitstring]
-    return bitstring
-
-def bitstrings_to_optimized_portfolios(bitstrings, assets_to_qubits):
-    """
-    Given a bitstring, return the portfolio that corresponds to the bitstring with log encoding
-    """
-    portfolios = []
-    for bitstring in bitstrings:
-        portfolio = {}
-        for asset, qubits in assets_to_qubits.items():
-            bits = [bitstring[q] for q in qubits]
-            portfolio[asset] = bitstring_to_int(bits)
-        portfolios.append(portfolio)
-    return portfolios
+from scipy.special import rel_entr
 
 class HigherOrderPortfolioQAOA:
 
     def __init__(self, 
-                 stocks, 
+                 stocks,
+                 prices_now,
                  expected_returns, 
                  covariance_matrix, 
                  budget, 
@@ -130,25 +30,34 @@ class HigherOrderPortfolioQAOA:
         self.stocks = stocks
         self.expected_returns = expected_returns
         self.covariance_matrix = covariance_matrix
-        
-        self.budget = budget
-        if log_encoding:
-            # Smallest N such that 2^N > budget
-            N = int(np.floor(np.log2(budget)))
-            self.num_qubits_per_asset = N if N > self.budget else N + 1
-        else:
-            self.num_qubits_per_asset = budget
-        
-        print("Number of qubits per asset: ", self.num_qubits_per_asset)
-        
         self.coskewness_tensor = coskewness_tensor
         self.cokurtosis_tensor = cokurtosis_tensor
         self.risk_aversion = risk_aversion
         self.layers = layers
         self.mixer = mixer
         self.log_encoding = log_encoding
-
+        self.budget = budget
         self.num_assets = len(expected_returns)
+        self.prices_now = prices_now
+        self.init_params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
+        self.num_qubits_per_asset = {}
+        
+        if log_encoding:
+            # Smallest N such that 2^N > budget
+            # Each asset can be bought at most floor(bugdet/price_now) times
+            # Thus, for each asset we have to choose the smallest N such that 2^N > floor(bugdet/price_now)    
+            for asset in stocks:
+                N = int(np.ceil(np.log2(np.ceil(budget/prices_now[asset]))))
+                self.num_qubits_per_asset[asset] = N
+                print(f"Number of qubits for asset {asset}: {N}")
+        else:
+            for asset in stocks:
+                N = int(np.ceil(budget/prices_now[asset]))
+                self.num_qubits_per_asset[asset] = N
+                print(f"Number of qubits for asset {asset}: {N}")
+        
+        print("Number of qubits per asset: ", self.num_qubits_per_asset)
+
         assert len(stocks) == len(expected_returns)
         assert len(expected_returns) == len(covariance_matrix)
         assert len(expected_returns) == len(covariance_matrix[0])
@@ -161,30 +70,55 @@ class HigherOrderPortfolioQAOA:
 
         self.total_qubits = 0
         for asset in stocks:
-            self.assets_to_qubits[asset] = list(range(self.total_qubits, self.total_qubits + self.num_qubits_per_asset))
+            self.assets_to_qubits[asset] = list(range(self.total_qubits, self.total_qubits + self.num_qubits_per_asset[asset]))
             for qubit in self.assets_to_qubits[asset]:
                 self.qubits_to_assets[qubit] = asset
-            self.total_qubits += self.num_qubits_per_asset
+            self.total_qubits += self.num_qubits_per_asset[asset]
+        
+        self.n_qubits = self.total_qubits
 
         print("Constructing cost hubo with integer variables")
-        max_value = self.construct_cost_hubo_int()
-        #print("Max value of the cost function: ", max_value)
-        #print("Constructing budget constraint")
+        self.construct_cost_hubo_int()
+        
+        if self.coskewness_tensor is None and self.cokurtosis_tensor is None:
+            ef = EfficientFrontier(self.expected_returns, self.covariance_matrix)
+            weights = ef.max_quadratic_utility(risk_aversion=risk_aversion)
 
-        ef = EfficientFrontier(self.expected_returns, self.covariance_matrix)
-        weights = ef.max_quadratic_utility(risk_aversion=risk_aversion)
+            print("Optimized Weights (considering variance and returns):")
+            for asset, weight in weights.items():
+                print(f"{asset}: {weight:.2%}")
 
-        print("Optimized Weights (considering variance and returns):")
-        for asset, weight in weights.items():
-            print(f"{asset}: {weight:.2%}")
+            numpy_weights = np.array(list(weights.values()))
 
-        numpy_weights = np.array(list(weights.values()))
-
-        # Get utility with optimized weights
-        maximized_utility = -0.5 * risk_aversion * numpy_weights.T @ self.covariance_matrix @ numpy_weights \
+            # Get utility with optimized weights
+            maximized_utility = -0.5 * risk_aversion * numpy_weights.T @ self.covariance_matrix @ numpy_weights \
                             + self.expected_returns @ numpy_weights
-        print("Maximized utility from classical mean variance: ", maximized_utility)
-        scaler = max(maximized_utility, 1)
+            print("Maximized utility from classical mean variance: ", maximized_utility)
+            scaler = max(maximized_utility, 1)
+        else:
+            hef = HigherMomentPortfolioOptimizer(self.stocks,
+                                                 expected_returns, 
+                                                 covariance_matrix, 
+                                                 coskewness_tensor, 
+                                                 cokurtosis_tensor, 
+                                                 risk_aversion=risk_aversion)
+            weights = hef.optimize_portfolio_with_higher_moments()
+            
+            print("Optimized Weights (considering variance, skewness and kurtosis):")
+            for asset, weight in zip(stocks, weights):
+                print(f"{asset}: {weight:.2%}")
+                
+            allocation, left_overs = hef.get_discrete_allocation(self.prices_now, self.budget)
+            print("Left over budget: ", left_overs)
+            
+            print("Optimized Discrete Allocation:")
+            for asset, amount in allocation.items():
+                print(f"{asset}: {amount}")
+            
+            scaler = hef.get_optimal_value()*100
+            print("Maximized utility from classical higher moments: ", scaler)
+            scaler = max(np.abs(scaler), 1)
+            
                 
         self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
         print("Adding budget constraints to the cost function -> constructing full hubo problem")
@@ -200,52 +134,58 @@ class HigherOrderPortfolioQAOA:
         print("Converting binary cost function to Ising Hamiltonian")
         self.cost_hubo_bin_to_ising_hamiltonian()
 
-        self.n_qubits = self.total_qubits
         print("Constructing QAOA circuits")
         self.qaoa_circuit, self.qaoa_probs_circuit = self.get_QAOA_circuits()
-        self.init_params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
+        
+        if self.coskewness_tensor is None and self.cokurtosis_tensor is None:
+            print("Performing warm start for QAOA")
+            target_bitstring = ""
+            for asset in self.assets_to_qubits:
+                qubits = self.assets_to_qubits[asset]
+                bits = int_to_bitstring(allocation[asset], len(qubits))
+                target_bitstring += bits
+            
+            self.init_params = self.warm_start_qaoa(target_bitstring)
 
     def construct_cost_hubo_int(self):
-        max_value = 0
         for i in range(self.num_assets):
             mu = self.expected_returns[i]
             self.cost_hubo_int[(self.stocks[i],)] = -mu
-            max_value += np.abs(mu)
         
         for i in range(self.num_assets):
             for j in range(self.num_assets):
                 cov = (self.risk_aversion/2)*self.covariance_matrix[i][j]
                 self.cost_hubo_int[(self.stocks[i], self.stocks[j])] = cov
-                max_value += np.abs(cov)
-
+                
         if self.coskewness_tensor is not None:
             for i in range(self.num_assets):
                 for j in range(self.num_assets):
                     for k in range(self.num_assets):
                         skew = (self.risk_aversion/6)*self.coskewness_tensor[i][j][k]
-                        #self.cost_hubo_int[(self.stocks[i], self.stocks[j], self.stocks[k])] = -skew
-                        max_value += np.abs(skew)
-        
+                        self.cost_hubo_int[(self.stocks[i], self.stocks[j], self.stocks[k])] = -skew
+                        
         if self.cokurtosis_tensor is not None:
             for i in range(self.num_assets):
                 for j in range(self.num_assets):
                     for k in range(self.num_assets):
                         for l in range(self.num_assets):
                             kurt = (self.risk_aversion/24)*self.cokurtosis_tensor[i][j][k][l]
-                            #self.cost_hubo_int[(self.stocks[i], self.stocks[j], self.stocks[k], self.stocks[l])] = kurt
-                            max_value += np.abs(kurt)
-        return max_value
+                            self.cost_hubo_int[(self.stocks[i], self.stocks[j], self.stocks[k], self.stocks[l])] = kurt
+
 
     def construct_budget_constraint(self, scaler = 1):
-        # Sum over all variables sums to budget (sum_{v in vars} v - budget)**2
+        # Sum over all variables sums to budget (sum_{v in vars} v - budget in terms of assets)**2
         # Recall that the variables at this stage are integers so x^n != x
+        # But in reality, not price of every stock is one, so in reality we have
+        # (sum_{i=0}^{n} price_i z_i - budget in terms of dollars)**2 = 0
         budget_const = {}
         for asset in self.stocks:
-            budget_const[(asset,)] = -2*self.budget*scaler
-            budget_const[(asset, asset)] = scaler
+            budget_const[(asset,)] = -2*self.budget*scaler*self.prices_now[asset]
+            budget_const[(asset, asset)] = scaler*self.prices_now[asset]**2
         for asset1, asset2 in itertools.combinations(self.stocks, 2):
-            budget_const[(asset1, asset2)] = 2*scaler
+            budget_const[(asset1, asset2)] = 2*scaler*self.prices_now[asset1]*self.prices_now[asset2]
         return budget_const
+
 
     def replace_integer_variables_with_binary_variables(self):
         """
@@ -315,7 +255,6 @@ class HigherOrderPortfolioQAOA:
                 self.cost_hubo_bin_simplified[bin_var_set] += self.cost_hubo_bin[bin_var]
             else:
                 self.cost_hubo_bin_simplified[bin_var_set] = self.cost_hubo_bin[bin_var]
-        #self.cost_hubo_bin_simplified = self.cost_hubo_bin
 
 
     def cost_hubo_bin_to_ising_hamiltonian(self):
@@ -330,16 +269,19 @@ class HigherOrderPortfolioQAOA:
             elif len(bin_var) == 2:
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
-                self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) + qml.PauliZ(qubit1))
-                #self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) @ qml.Identity(qubit1)\
-                #                                - qml.Identity(qubit0) @ qml.PauliZ(qubit1)\
-                #                                - qml.PauliZ(qubit0) @ qml.Identity(qubit1)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1))
+                #self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) + qml.PauliZ(qubit1))
+                self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) @ qml.Identity(qubit1)\
+                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1)\
+                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1)\
+                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1))
             elif len(bin_var) == 3:
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
                 qubit2 = bin_var[2][1]
-                #self.hamiltonian += (self.cost_hubo_bin[bin_var]/8)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2))
+                
+                #self.hamiltonian += (self.cost_hubo_bin[bin_var]/8)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ 
+                # (qml.Identity(qubit1) + qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) + qml.PauliZ(qubit2))
+                
                 # Multiply the previous line open to speedup pennylane
                 self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
                                                 + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
@@ -355,7 +297,9 @@ class HigherOrderPortfolioQAOA:
                 qubit1 = bin_var[1][1]
                 qubit2 = bin_var[2][1]
                 qubit3 = bin_var[3][1]
-                #self.hamiltonian += (self.cost_hubo_bin[bin_var]/16)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2)) @ (qml.Identity(qubit3) - qml.PauliZ(qubit3))
+                
+                #self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) + qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) + qml.PauliZ(qubit2)) @ (qml.Identity(qubit3) + qml.PauliZ(qubit3))
+                
                 # Multiply the previous line open manually, somehow speedsup the process
                 self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
                                                 + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
@@ -376,8 +320,7 @@ class HigherOrderPortfolioQAOA:
                 
 
     def get_QAOA_circuits(self):
-        #dev = qml.device('qiskit.aer', wires=self.n_qubits)
-        dev = qml.device('lightning.qubit', wires=self.n_qubits)
+        dev = qml.device('default.qubit', wires=self.n_qubits)
         
         cost_hamiltonian = self.get_cost_hamiltonian()
         mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits))
@@ -386,13 +329,10 @@ class HigherOrderPortfolioQAOA:
             qml.qaoa.cost_layer(gamma, cost_hamiltonian)
             qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
         
-        init_guess = [0, 1, 0, 0, 1, 0]
         @qml.qnode(dev)
         def qaoa_circuit(params):
             for wire in range(self.n_qubits):
-                #qml.Hadamard(wires=wire)
-                if init_guess[wire] == 1:
-                    qml.PauliX(wires=wire)
+                qml.Hadamard(wires=wire)
             qml.layer(qaoa_layer, self.layers, params[0], params[1])
             return qml.expval(cost_hamiltonian)
         
@@ -423,13 +363,19 @@ class HigherOrderPortfolioQAOA:
 
 
     def solve_exactly(self):
-        cost_matrix = self.get_cost_hamiltonian().matrix(wire_order=range(self.n_qubits))
-        self.smallest_eigenvalues, self.smallest_eigenvectors, first_excited_energy, first_excited_state = smallest_eigenpairs(cost_matrix)
+        if self.n_qubits < 14:
+            cost_matrix = self.get_cost_hamiltonian().matrix(wire_order=range(self.n_qubits))
+            self.smallest_eigenvalues, self.smallest_eigenvectors, first_excited_energy, first_excited_state = smallest_eigenpairs(cost_matrix)
+        else:
+            cost_matrix = self.get_cost_hamiltonian().sparse_matrix(wire_order=range(self.n_qubits))
+            self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, first_excited_state = smallest_sparse_eigenpairs(cost_matrix)
+        
         self.smallest_bitstrings = [basis_vector_to_bitstring(v) for v in self.smallest_eigenvectors]
         second_smallest_bitstrings = [basis_vector_to_bitstring(first_excited_state)]
         optimized_portfolio = bitstrings_to_optimized_portfolios(self.smallest_bitstrings, self.assets_to_qubits)
         second_optimized_portfolio = bitstrings_to_optimized_portfolios(second_smallest_bitstrings, self.assets_to_qubits)
-        return self.smallest_eigenvalues, self.smallest_eigenvectors, self.smallest_bitstrings, first_excited_energy, first_excited_state, optimized_portfolio, second_optimized_portfolio
+        
+        return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio
     
 
     def solve_with_qaoa(self):
@@ -437,7 +383,7 @@ class HigherOrderPortfolioQAOA:
         #opt = qml.QNGOptimizer()
         params = self.init_params.copy()
         probs = self.qaoa_probs_circuit(params)
-        total_steps = 2000
+        total_steps = 100
         #attempts = 0
         #while True:
         #steps = 10
@@ -494,7 +440,8 @@ class HigherOrderPortfolioQAOA:
     
 
     def solve_with_iterative_QAOA(self, max_layers = 10):
-        # Start with layers = 1 and increase the number of layers until convergence and use the previous layers optimized params as initialization
+        # Start with layers = 1 and increase the number of layers until convergence and 
+        # use the previous layers optimized params as initialization
         for layers in range(1, max_layers + 1):
             print(f"Trying with {layers} layers")
             self.layers = layers
@@ -505,7 +452,7 @@ class HigherOrderPortfolioQAOA:
             else:
                 params = np.array([[p for p in params[0]] + [params[0][-1]], [p for p in params[1]] + [params[1][-1]]], requires_grad=True)
             
-            total_steps = 500*layers
+            total_steps = 200*layers
             for _ in range(total_steps):
                 params = opt.step(self.qaoa_circuit, params)
             
@@ -519,10 +466,56 @@ class HigherOrderPortfolioQAOA:
             print(f"Two most probable states: {two_most_probable_states} with probabilities {states_probs}")
             print(f"Final expectation value: {final_expectation_value}")
             print(f"Optimized portfolios: {optimized_portfolios}")
-            if layers > 1:
-                if np.isclose(final_expectation_value, previous_expectation_value, rtol=1e-03):
-                    break
-            previous_expectation_value = final_expectation_value
+            print(self.smallest_bitstrings)
+            if "".join(two_most_probable_states[-1]) in self.smallest_bitstrings:
+                break
+            
+            #if layers > 1:
+            #    if np.isclose(final_expectation_value, previous_expectation_value, rtol=1e-03):
+            #        break
+            #previous_expectation_value = final_expectation_value
 
         return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
-
+    
+    
+    def get_objective_value(self, stocks, optimized_portfolio):
+        objective_value = 0
+        for i in range(len(stocks)):
+            objective_value -= optimized_portfolio[stocks[i]]*self.expected_returns[i]
+            
+        for i in range(len(stocks)):
+            for j in range(len(stocks)):
+                objective_value += (self.risk_aversion/2)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*self.covariance_matrix[i][j]
+        
+        if self.coskewness_tensor is not None:
+            for i in range(len(stocks)):
+                for j in range(len(stocks)):
+                    for k in range(len(stocks)):
+                        objective_value -= (self.risk_aversion/6)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*optimized_portfolio[stocks[k]]*self.coskewness_tensor[i][j][k]
+        
+        if self.cokurtosis_tensor is not None:
+            for i in range(len(stocks)):
+                for j in range(len(stocks)):
+                    for k in range(len(stocks)):
+                        for l in range(len(stocks)):
+                            objective_value += (self.risk_aversion/24)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*optimized_portfolio[stocks[k]]*optimized_portfolio[stocks[l]]*self.cokurtosis_tensor[i][j][k][l]
+        
+        return objective_value
+    
+    def warm_start_qaoa(self, target_bitstring):
+        opt = qml.AdagradOptimizer(stepsize=0.5)
+        params = self.init_params.copy()
+        total_steps = 200
+        target_probs = np.zeros(2**self.total_qubits)
+        target_probs[int(target_bitstring, 2)] = 1
+        _, qaoa_probs_circuit = self.get_QAOA_circuits()
+        
+        def objective(params):
+            # Maximize the overlap of the target bitstring with the most probable state
+            probs = qaoa_probs_circuit(params)
+            return rel_entr(target_probs, probs)
+            
+        for _ in range(total_steps):
+            params = opt.step(objective, params)
+        
+        return params

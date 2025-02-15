@@ -1,4 +1,4 @@
-import pandas as pd
+#import pandas as pd
 
 """
 def coskewness(df: pd.DataFrame):
@@ -69,7 +69,7 @@ def cokurtosis(df: pd.DataFrame):
 """
 
 import numpy as np
-import torch
+#import torch
 
 
 def coskewness(X):
@@ -113,6 +113,7 @@ def cokurtosis(X):
 
     return cokurt - 3
 
+"""
 # Write torch functions
 def coskewness_torch(X):
     n = X.shape[0]
@@ -160,3 +161,4 @@ def cokurtosis_torch(X):
                     cokurt[i, j, k, l] /= (std_devs[i] * std_devs[j] * std_devs[k] * std_devs[l])
 
     return cokurt
+"""
