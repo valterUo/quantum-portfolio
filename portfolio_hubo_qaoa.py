@@ -1,16 +1,16 @@
 import itertools
+import jax
+import optax
 import pennylane as qml
 from pennylane import numpy as np
+from jax import numpy as jnp
 
 from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
 from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)
-from pennylane.transforms import compile
 
 from pypfopt import EfficientFrontier
-
-from scipy.special import rel_entr
 
 class HigherOrderPortfolioQAOA:
 
@@ -108,6 +108,10 @@ class HigherOrderPortfolioQAOA:
             for asset, weight in zip(stocks, weights):
                 print(f"{asset}: {weight:.2%}")
                 
+            #over_optimistic_allocation = {}
+            #for asset, weight in zip(stocks, weights):
+            #    over_optimistic_allocation[asset] = int(np.floor(weight*budget/prices_now[asset]))
+                
             allocation, left_overs = hef.get_discrete_allocation(self.prices_now, self.budget)
             print("Left over budget: ", left_overs)
             
@@ -115,9 +119,9 @@ class HigherOrderPortfolioQAOA:
             for asset, amount in allocation.items():
                 print(f"{asset}: {amount}")
             
-            scaler = hef.get_optimal_value()*100
-            print("Maximized utility from classical higher moments: ", scaler)
-            scaler = max(np.abs(scaler), 1)
+            value = self.get_objective_value(self.stocks, allocation) #hef.get_optimal_value()*100
+            print("Maximized utility from classical higher moments: ", value)
+            scaler = max(np.abs(value)*252, 1)
             
                 
         self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
@@ -137,15 +141,16 @@ class HigherOrderPortfolioQAOA:
         print("Constructing QAOA circuits")
         self.qaoa_circuit, self.qaoa_probs_circuit = self.get_QAOA_circuits()
         
-        if self.coskewness_tensor is None and self.cokurtosis_tensor is None:
-            print("Performing warm start for QAOA")
+        if self.coskewness_tensor is not None and self.cokurtosis_tensor is not None:
             target_bitstring = ""
             for asset in self.assets_to_qubits:
                 qubits = self.assets_to_qubits[asset]
                 bits = int_to_bitstring(allocation[asset], len(qubits))
                 target_bitstring += bits
             
-            self.init_params = self.warm_start_qaoa(target_bitstring)
+            print("Performing warm start for QAOA with target bitstring ", target_bitstring)
+            
+            #self.init_params = self.warm_start_qaoa(target_bitstring)
 
     def construct_cost_hubo_int(self):
         for i in range(self.num_assets):
@@ -329,14 +334,14 @@ class HigherOrderPortfolioQAOA:
             qml.qaoa.cost_layer(gamma, cost_hamiltonian)
             qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
         
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def qaoa_circuit(params):
             for wire in range(self.n_qubits):
                 qml.Hadamard(wires=wire)
             qml.layer(qaoa_layer, self.layers, params[0], params[1])
             return qml.expval(cost_hamiltonian)
         
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def qaoa_probs_circuit(params):
             for wire in range(self.n_qubits):
                 qml.Hadamard(wires=wire)
@@ -375,15 +380,30 @@ class HigherOrderPortfolioQAOA:
         optimized_portfolio = bitstrings_to_optimized_portfolios(self.smallest_bitstrings, self.assets_to_qubits)
         second_optimized_portfolio = bitstrings_to_optimized_portfolios(second_smallest_bitstrings, self.assets_to_qubits)
         
+        self.satisfy_budget_constraint(optimized_portfolio)
+        self.satisfy_budget_constraint(second_optimized_portfolio)
+        
         return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio
+
     
+    def satisfy_budget_constraint(self, optimized_portfolio):
+        # Satisfies budget constraint
+        for portfolio in optimized_portfolio:
+            B = 0
+            for asset in portfolio:
+                B += self.prices_now[asset]*portfolio[asset]
+            if B > self.budget:
+                print("Budget constraint not satisfied", B, self.budget, "Difference: ", B - self.budget)
+            else:
+                print("Budget constraint satisfied", B, self.budget, "Difference: ", self.budget - B)
+
 
     def solve_with_qaoa(self):
-        opt = qml.AdagradOptimizer(stepsize=0.5)
+        opt = qml.AdagradOptimizer(stepsize=0.01)
         #opt = qml.QNGOptimizer()
         params = self.init_params.copy()
         probs = self.qaoa_probs_circuit(params)
-        total_steps = 100
+        total_steps = 500
         #attempts = 0
         #while True:
         #steps = 10
@@ -417,6 +437,71 @@ class HigherOrderPortfolioQAOA:
         states_probs = [probs[i] for i in two_most_probable_states]
         two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable_states]
         optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
+        
+        for portfolio in optimized_portfolios:
+            self.satisfy_budget_constraint(portfolio)
+        
+        return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
+    
+    
+    def solve_with_qaoa_jax(self):
+        solver = optax.adamw(learning_rate=0.01)
+        
+        params = self.init_params.copy()
+        params = jnp.array(params)
+
+        total_steps = 0
+        attempts = 0
+        limit_steps = 1000
+        jit_circuit = jax.jit(self.qaoa_circuit)
+        
+        while True:
+            steps = 10
+            opt_state = solver.init(params)
+            for _ in range(steps):
+                grad = jax.grad(jit_circuit)(params)
+                updates, opt_state = solver.update(grad, opt_state, params)
+                params = optax.apply_updates(params, updates)
+            
+            total_steps += steps
+            probs = self.qaoa_probs_circuit(params)
+            most_probable_state = np.argsort(probs)[-1]
+            most_probable_state = int_to_bitstring(most_probable_state, self.n_qubits)
+            print(f"Most probable state: {most_probable_state} and {self.smallest_bitstrings} with probs {most_probable_state}")
+            
+            smallest_bitstrings = ["".join([str(b) for b in bitstring]) for bitstring in self.smallest_bitstrings]
+            if most_probable_state in smallest_bitstrings:
+                break
+            if total_steps > limit_steps:
+                print("Optimization did not converge")
+                print("Trying with a new initialization")
+                self.init_params = jnp.array(0.01*np.pi*np.random.rand(2, self.layers))
+                params = self.init_params.copy()
+                total_steps = 0
+                attempts += 1
+            if attempts > 3:
+                print("Optimization did not converge to the known optimal solution after ", attempts, " attempts.")
+                break
+
+        final_expectation_value = self.qaoa_circuit(params)
+        two_most_probable_states = np.argsort(probs)[-2:]
+        states_probs = [probs[i] for i in two_most_probable_states]
+        two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable_states]
+        
+        print(f"Two most probable states: {two_most_probable_states} with probabilities {states_probs}")
+        
+        optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
+        
+        print(f"Optimized portfolios: {optimized_portfolios}")
+        
+        self.satisfy_budget_constraint(optimized_portfolios)
+        
+        
+        print(f"Final expectation value: {final_expectation_value}")
+        
+        objective_values = [self.get_objective_value(self.stocks, optimized_portfolios[i]) for i in range(2)]
+        print(f"Objective values: {objective_values}")
+        
         return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
 
 
@@ -446,13 +531,15 @@ class HigherOrderPortfolioQAOA:
             print(f"Trying with {layers} layers")
             self.layers = layers
             self.qaoa_circuit, self.qaoa_probs_circuit = self.get_QAOA_circuits()
-            opt = qml.AdagradOptimizer(stepsize=(1/(layers+1)))
+            opt = qml.AdagradOptimizer(stepsize=0.7)
             if layers == 1:
                 params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
+                #print("Initial params: ", params)
             else:
                 params = np.array([[p for p in params[0]] + [params[0][-1]], [p for p in params[1]] + [params[1][-1]]], requires_grad=True)
+                #print("New params: ", params)
             
-            total_steps = 200*layers
+            total_steps = 2000
             for _ in range(total_steps):
                 params = opt.step(self.qaoa_circuit, params)
             
@@ -463,22 +550,25 @@ class HigherOrderPortfolioQAOA:
             states_probs = [probs[i] for i in two_most_probable_states]
             two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable_states]
             optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
+            
+            self.satisfy_budget_constraint(optimized_portfolios)
+            
             print(f"Two most probable states: {two_most_probable_states} with probabilities {states_probs}")
             print(f"Final expectation value: {final_expectation_value}")
             print(f"Optimized portfolios: {optimized_portfolios}")
-            print(self.smallest_bitstrings)
+            objective_values = [self.get_objective_value(self.stocks, optimized_portfolios[i]) for i in range(2)]
+            print(f"Objective values: {objective_values}")
             if "".join(two_most_probable_states[-1]) in self.smallest_bitstrings:
                 break
-            
-            #if layers > 1:
-            #    if np.isclose(final_expectation_value, previous_expectation_value, rtol=1e-03):
-            #        break
-            #previous_expectation_value = final_expectation_value
 
         return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
     
     
     def get_objective_value(self, stocks, optimized_portfolio):
+        for stock in stocks:
+            if stock not in optimized_portfolio:
+                optimized_portfolio[stock] = 0
+        
         objective_value = 0
         for i in range(len(stocks)):
             objective_value -= optimized_portfolio[stocks[i]]*self.expected_returns[i]
@@ -503,19 +593,24 @@ class HigherOrderPortfolioQAOA:
         return objective_value
     
     def warm_start_qaoa(self, target_bitstring):
-        opt = qml.AdagradOptimizer(stepsize=0.5)
+        opt = qml.AdamOptimizer(stepsize=0.01)
         params = self.init_params.copy()
         total_steps = 200
-        target_probs = np.zeros(2**self.total_qubits)
-        target_probs[int(target_bitstring, 2)] = 1
+        epsilon = 1e-8
+        target_probs = [epsilon]*2**self.total_qubits
+        target_probs[int(target_bitstring, 2)] = 1 - (2**(self.total_qubits) - 1)*epsilon
+        target_probs = np.array(target_probs)
         _, qaoa_probs_circuit = self.get_QAOA_circuits()
         
         def objective(params):
             # Maximize the overlap of the target bitstring with the most probable state
             probs = qaoa_probs_circuit(params)
-            return rel_entr(target_probs, probs)
+            #print(type(probs[0]), type(target_probs[0]))
+            return np.sum(target_probs*(np.log2(target_probs) - np.log2(probs))) #rel_entr(target_probs, probs)
             
-        for _ in range(total_steps):
-            params = opt.step(objective, params)
+        for i in range(total_steps):
+            params, cost = opt.step_and_cost(objective, params)
+            if i % 10 == 0:
+                print(f"Cost: {cost}")
         
         return params
