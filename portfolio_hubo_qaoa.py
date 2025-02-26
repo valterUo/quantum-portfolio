@@ -1,16 +1,15 @@
 import itertools
-import jax
 import optax
+import jax
 import pennylane as qml
 from pennylane import numpy as np
 from jax import numpy as jnp
+from pypfopt import EfficientFrontier
 
 from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
 from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)
-
-from pypfopt import EfficientFrontier
 
 class HigherOrderPortfolioQAOA:
 
@@ -471,7 +470,8 @@ class HigherOrderPortfolioQAOA:
             
             smallest_bitstrings = ["".join([str(b) for b in bitstring]) for bitstring in self.smallest_bitstrings]
             if most_probable_state in smallest_bitstrings:
-                break
+                pass
+                #break
             if total_steps > limit_steps:
                 print("Optimization did not converge")
                 print("Trying with a new initialization")
