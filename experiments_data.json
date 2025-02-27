@@ -1,435 +1,84 @@
 {
     "0": [
         {
+            "max_qubits": 10,
+            "budget": 2156.2599868774414,
+            "stock_metadata": {
+                "BA": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 1,
+                    "price": 177.0
+                },
+                "TRV": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 3,
+                    "price": 240.88999938964844
+                },
+                "DIS": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 1,
+                    "price": 111.3499984741211
+                },
+                "GS": {
+                    "max_int": 15,
+                    "qubits": 4,
+                    "random_int": 2,
+                    "price": 572.6199951171875
+                }
+            },
             "stocks": [
-                "HON",
-                "JNJ"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "WBA",
-                "CRM",
-                "JPM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "AXP",
-                "GS",
-                "MRK",
-                "NKE"
+                "BA",
+                "TRV",
+                "DIS",
+                "GS"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
             "n_stocks": 4
         },
         {
+            "max_qubits": 10,
+            "budget": 1930.1630783081055,
+            "stock_metadata": {
+                "MSFT": {
+                    "max_int": 15,
+                    "qubits": 4,
+                    "random_int": 2,
+                    "price": 420.6565246582031
+                },
+                "NKE": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 75.66999816894531
+                },
+                "MCD": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 289.8900146484375
+                },
+                "HON": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 225.88999938964844
+                },
+                "MRK": {
+                    "max_int": 7,
+                    "qubits": 3,
+                    "random_int": 5,
+                    "price": 99.4800033569336
+                }
+            },
             "stocks": [
-                "JNJ",
-                "DOW",
-                "DIS",
-                "AMGN",
-                "HD"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 5
-        },
-        {
-            "stocks": [
-                "NKE",
-                "INTC",
-                "PG",
-                "CSCO",
-                "MRK",
-                "CAT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "HD",
-                "CAT",
-                "WBA",
-                "BA",
-                "TRV",
-                "GS",
-                "MSFT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 7
-        },
-        {
-            "stocks": [
-                "V",
-                "DIS",
-                "TRV",
-                "CAT",
-                "HD",
-                "BA",
-                "WMT",
-                "AAPL"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 8
-        },
-        {
-            "stocks": [
-                "CRM",
-                "HON",
-                "VZ",
-                "IBM",
-                "NKE",
-                "MSFT",
-                "BA",
-                "INTC",
-                "JPM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 9
-        },
-        {
-            "stocks": [
-                "IBM",
-                "TRV",
-                "UNH",
-                "CSCO",
                 "MSFT",
                 "NKE",
                 "MCD",
-                "MRK",
-                "GS",
-                "AXP"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "DIS",
-                "MSFT",
-                "MMM",
-                "AAPL",
-                "WMT",
-                "JNJ",
-                "V",
-                "VZ",
-                "UNH",
                 "HON",
-                "TRV"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "NKE",
-                "AMGN",
-                "HON",
-                "IBM",
-                "KO",
-                "WMT",
-                "CRM",
-                "V",
-                "AAPL",
-                "CSCO",
-                "PG",
-                "DIS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "KO",
-                "DIS",
-                "CAT",
-                "CRM",
-                "MSFT",
-                "MCD",
-                "AAPL",
-                "WMT",
-                "IBM",
-                "MRK",
-                "NKE",
-                "BA",
-                "HD"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
-            "stocks": [
-                "MSFT",
-                "HD",
-                "V",
-                "BA",
-                "DOW",
-                "IBM",
-                "DIS",
-                "CSCO",
-                "TRV",
-                "WMT",
-                "PG",
-                "CRM",
-                "MCD",
-                "AAPL"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
-        }
-    ],
-    "1": [
-        {
-            "stocks": [
-                "TRV",
-                "DIS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "JNJ",
-                "IBM",
-                "PG"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "KO",
-                "HD",
-                "CVX",
-                "CSCO"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 4
-        },
-        {
-            "stocks": [
-                "AMGN",
-                "CVX",
-                "AXP",
-                "TRV",
-                "VZ"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 5
-        },
-        {
-            "stocks": [
-                "GS",
-                "NKE",
-                "AAPL",
-                "HON",
-                "VZ",
-                "WBA"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "CAT",
-                "CRM",
-                "DOW",
-                "AXP",
-                "AAPL",
-                "V",
-                "MSFT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 7
-        },
-        {
-            "stocks": [
-                "VZ",
-                "JNJ",
-                "AMGN",
-                "V",
-                "MRK",
-                "GS",
-                "DIS",
-                "KO"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 8
-        },
-        {
-            "stocks": [
-                "HON",
-                "CSCO",
-                "VZ",
-                "PG",
-                "JPM",
-                "AMGN",
-                "GS",
-                "MCD",
-                "NKE"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 9
-        },
-        {
-            "stocks": [
-                "VZ",
-                "UNH",
-                "V",
-                "DIS",
-                "INTC",
-                "AAPL",
-                "IBM",
-                "TRV",
-                "BA",
-                "NKE"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "PG",
-                "UNH",
-                "IBM",
-                "CSCO",
-                "KO",
-                "MMM",
-                "WMT",
-                "GS",
-                "BA",
-                "DIS",
-                "INTC"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "DIS",
-                "CVX",
-                "IBM",
-                "JPM",
-                "AXP",
-                "BA",
-                "CAT",
-                "V",
-                "KO",
-                "DOW",
-                "PG",
-                "MSFT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "TRV",
-                "VZ",
-                "AAPL",
-                "MMM",
-                "BA",
-                "UNH",
-                "CSCO",
-                "DOW",
-                "PG",
-                "DIS",
-                "JNJ",
-                "HON",
-                "INTC"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
-            "stocks": [
-                "AMGN",
-                "BA",
-                "AXP",
-                "TRV",
-                "MMM",
-                "CSCO",
-                "CVX",
-                "V",
-                "CRM",
-                "NKE",
-                "WBA",
-                "HON",
-                "DIS",
-                "JPM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
-        }
-    ],
-    "2": [
-        {
-            "stocks": [
-                "TRV",
-                "BA"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "AMGN",
-                "GS",
-                "AAPL"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "KO",
-                "AAPL",
-                "UNH",
-                "HD"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 4
-        },
-        {
-            "stocks": [
-                "INTC",
-                "JPM",
-                "CVX",
-                "AXP",
                 "MRK"
             ],
             "start": "2015-01-01",
@@ -437,748 +86,339 @@
             "n_stocks": 5
         },
         {
-            "stocks": [
-                "MCD",
-                "AXP",
-                "TRV",
-                "BA",
-                "V",
-                "JNJ"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "CSCO",
-                "GS",
-                "INTC",
-                "WMT",
-                "NKE",
-                "PG",
-                "CVX"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 7
-        },
-        {
-            "stocks": [
-                "V",
-                "VZ",
-                "CSCO",
-                "WBA",
-                "AXP",
-                "CRM",
-                "CVX",
-                "WMT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 8
-        },
-        {
-            "stocks": [
-                "IBM",
-                "MRK",
-                "GS",
-                "BA",
-                "TRV",
-                "MCD",
-                "VZ",
-                "CVX",
-                "MMM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 9
-        },
-        {
-            "stocks": [
-                "NKE",
-                "VZ",
-                "JPM",
-                "PG",
-                "MRK",
-                "HD",
-                "UNH",
-                "INTC",
-                "JNJ",
-                "GS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "CAT",
-                "MSFT",
-                "V",
-                "MMM",
-                "MCD",
-                "WMT",
-                "AAPL",
-                "IBM",
-                "AXP",
-                "CRM",
-                "GS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "CAT",
-                "KO",
-                "WBA",
-                "NKE",
-                "INTC",
-                "TRV",
-                "HD",
-                "VZ",
-                "DIS",
-                "PG",
-                "HON",
-                "DOW"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "V",
-                "HD",
-                "JNJ",
-                "WMT",
-                "JPM",
-                "UNH",
-                "AAPL",
-                "MMM",
-                "TRV",
-                "CSCO",
-                "IBM",
-                "CVX",
-                "KO"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
+            "max_qubits": 10,
+            "budget": 1645.4164543151855,
+            "stock_metadata": {
+                "KO": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 2,
+                    "price": 62.2599983215332
+                },
+                "DOW": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 40.130001068115234
+                },
+                "DIS": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 1,
+                    "price": 111.3499984741211
+                },
+                "CAT": {
+                    "max_int": 7,
+                    "qubits": 3,
+                    "random_int": 2,
+                    "price": 361.4349670410156
+                },
+                "HON": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 225.88999938964844
+                },
+                "MSFT": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 420.6565246582031
+                }
+            },
             "stocks": [
                 "KO",
-                "UNH",
-                "MCD",
-                "JNJ",
-                "V",
-                "VZ",
-                "PG",
-                "JPM",
-                "AXP",
-                "AMGN",
-                "WMT",
-                "DIS",
-                "WBA",
-                "CVX"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
-        }
-    ],
-    "3": [
-        {
-            "stocks": [
-                "MCD",
-                "AAPL"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "GS",
-                "V",
-                "CVX"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "MCD",
-                "MRK",
-                "CRM",
-                "NKE"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 4
-        },
-        {
-            "stocks": [
                 "DOW",
-                "MSFT",
-                "TRV",
-                "WBA",
-                "MMM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 5
-        },
-        {
-            "stocks": [
-                "CRM",
-                "AXP",
-                "NKE",
-                "IBM",
-                "HD",
-                "MCD"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "AXP",
                 "DIS",
-                "AMGN",
-                "CRM",
-                "JPM",
-                "CSCO",
+                "CAT",
+                "HON",
                 "MSFT"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
-            "n_stocks": 7
+            "n_stocks": 6
         },
         {
+            "max_qubits": 10,
+            "budget": 2088.5116806030273,
+            "stock_metadata": {
+                "HD": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 388.989990234375
+                },
+                "MCD": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 289.8900146484375
+                },
+                "AAPL": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 250.1449737548828
+                },
+                "TRV": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 1,
+                    "price": 240.88999938964844
+                },
+                "DIS": {
+                    "max_int": 7,
+                    "qubits": 3,
+                    "random_int": 5,
+                    "price": 111.3499984741211
+                },
+                "JNJ": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 143.4715576171875
+                },
+                "IBM": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 218.37515258789062
+                }
+            },
             "stocks": [
-                "UNH",
-                "AAPL",
-                "AMGN",
-                "WMT",
-                "CAT",
-                "MMM",
-                "JNJ",
-                "VZ"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 8
-        },
-        {
-            "stocks": [
-                "JPM",
-                "IBM",
-                "MMM",
-                "CSCO",
-                "HON",
-                "V",
-                "DIS",
-                "VZ",
-                "MRK"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 9
-        },
-        {
-            "stocks": [
-                "TRV",
-                "BA",
-                "CSCO",
-                "CRM",
-                "DOW",
-                "UNH",
-                "HON",
                 "HD",
-                "GS",
-                "CVX"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "BA",
-                "NKE",
-                "HON",
-                "JNJ",
-                "UNH",
-                "AAPL",
-                "MMM",
-                "GS",
                 "MCD",
-                "DOW",
-                "V"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "CAT",
-                "UNH",
-                "MRK",
-                "AMGN",
-                "CRM",
-                "DIS",
-                "INTC",
-                "BA",
-                "DOW",
-                "GS",
-                "MMM",
-                "AXP"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "AXP",
-                "CSCO",
-                "VZ",
-                "GS",
-                "MSFT",
-                "IBM",
-                "INTC",
-                "PG",
-                "DOW",
+                "AAPL",
                 "TRV",
-                "NKE",
-                "MCD",
-                "JPM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
-            "stocks": [
-                "INTC",
-                "HON",
-                "MSFT",
-                "CVX",
-                "CSCO",
-                "JNJ",
-                "PG",
-                "HD",
-                "MMM",
-                "CAT",
-                "UNH",
-                "GS",
-                "IBM",
-                "CRM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
-        }
-    ],
-    "4": [
-        {
-            "stocks": [
                 "DIS",
-                "INTC"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "V",
-                "AAPL",
+                "JNJ",
                 "IBM"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "WBA",
-                "TRV",
-                "AXP",
-                "GS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 4
-        },
-        {
-            "stocks": [
-                "CVX",
-                "CAT",
-                "PG",
-                "HD",
-                "INTC"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 5
-        },
-        {
-            "stocks": [
-                "JNJ",
-                "MSFT",
-                "CAT",
-                "HD",
-                "BA",
-                "NKE"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "WMT",
-                "KO",
-                "AXP",
-                "HD",
-                "CVX",
-                "MRK",
-                "DOW"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
             "n_stocks": 7
         },
         {
+            "max_qubits": 10,
+            "budget": 2538.3407287597656,
+            "stock_metadata": {
+                "DOW": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 40.130001068115234
+                },
+                "AXP": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 296.0938415527344
+                },
+                "AMGN": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 258.5511779785156
+                },
+                "AAPL": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 250.1449737548828
+                },
+                "V": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 3,
+                    "price": 315.5091247558594
+                },
+                "MSFT": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 420.6565246582031
+                },
+                "VZ": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 39.29372024536133
+                },
+                "JNJ": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 2,
+                    "price": 143.4715576171875
+                }
+            },
             "stocks": [
-                "AAPL",
-                "HD",
-                "JNJ",
-                "AMGN",
-                "IBM",
-                "CRM",
-                "JPM",
-                "BA"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 8
-        },
-        {
-            "stocks": [
-                "BA",
-                "MSFT",
-                "NKE",
-                "HON",
-                "IBM",
-                "DIS",
                 "DOW",
+                "AXP",
                 "AMGN",
-                "WMT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 9
-        },
-        {
-            "stocks": [
+                "AAPL",
                 "V",
-                "NKE",
-                "JPM",
-                "AXP",
-                "HD",
-                "IBM",
-                "WMT",
-                "VZ",
-                "CAT",
-                "CVX"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "UNH",
-                "PG",
-                "JNJ",
-                "DIS",
-                "DOW",
-                "AAPL",
-                "WBA",
-                "WMT",
-                "CSCO",
-                "KO",
-                "AXP"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "JNJ",
-                "MMM",
-                "BA",
-                "DOW",
                 "MSFT",
-                "MRK",
-                "HD",
-                "MCD",
-                "NKE",
-                "PG",
-                "CSCO",
-                "JPM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "AAPL",
-                "INTC",
-                "KO",
-                "GS",
-                "PG",
-                "WBA",
-                "CVX",
-                "JPM",
-                "CSCO",
-                "CRM",
-                "BA",
-                "DOW",
-                "MMM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
-            "stocks": [
-                "CRM",
-                "MRK",
-                "MCD",
-                "WBA",
                 "VZ",
-                "CSCO",
-                "BA",
-                "NKE",
-                "JNJ",
-                "GS",
-                "AMGN",
-                "AXP",
-                "TRV",
-                "CAT"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
-        }
-    ],
-    "5": [
-        {
-            "stocks": [
-                "BA",
-                "CSCO"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 2
-        },
-        {
-            "stocks": [
-                "MCD",
-                "JNJ",
-                "INTC"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 3
-        },
-        {
-            "stocks": [
-                "MSFT",
-                "AMGN",
-                "CAT",
-                "BA"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 4
-        },
-        {
-            "stocks": [
-                "TRV",
-                "NKE",
-                "CAT",
-                "PG",
                 "JNJ"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
-            "n_stocks": 5
-        },
-        {
-            "stocks": [
-                "UNH",
-                "VZ",
-                "JPM",
-                "MRK",
-                "NKE",
-                "CRM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 6
-        },
-        {
-            "stocks": [
-                "DOW",
-                "CRM",
-                "IBM",
-                "AMGN",
-                "NKE",
-                "DIS",
-                "UNH"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 7
-        },
-        {
-            "stocks": [
-                "VZ",
-                "HON",
-                "CSCO",
-                "MSFT",
-                "TRV",
-                "KO",
-                "MMM",
-                "IBM"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
             "n_stocks": 8
         },
         {
+            "max_qubits": 10,
+            "budget": 2242.7171478271484,
+            "stock_metadata": {
+                "AMGN": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 258.5511779785156
+                },
+                "JPM": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 238.4783477783203
+                },
+                "PG": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 166.6339111328125
+                },
+                "GS": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 572.6199951171875
+                },
+                "MCD": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 289.8900146484375
+                },
+                "NKE": {
+                    "max_int": 3,
+                    "qubits": 2,
+                    "random_int": 2,
+                    "price": 75.66999816894531
+                },
+                "VZ": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 39.29372024536133
+                },
+                "UNH": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 505.8599853515625
+                },
+                "INTC": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 20.049999237060547
+                }
+            },
             "stocks": [
-                "V",
-                "WMT",
-                "IBM",
                 "AMGN",
-                "HON",
-                "AXP",
-                "MRK",
-                "CAT",
-                "GS"
+                "JPM",
+                "PG",
+                "GS",
+                "MCD",
+                "NKE",
+                "VZ",
+                "UNH",
+                "INTC"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
             "n_stocks": 9
         },
         {
+            "max_qubits": 10,
+            "budget": 2089.9633293151855,
+            "stock_metadata": {
+                "AAPL": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 250.1449737548828
+                },
+                "IBM": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 218.37515258789062
+                },
+                "TRV": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 240.88999938964844
+                },
+                "BA": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 177.0
+                },
+                "NKE": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 75.66999816894531
+                },
+                "PG": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 166.6339111328125
+                },
+                "UNH": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 505.8599853515625
+                },
+                "CRM": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 334.3299865722656
+                },
+                "CSCO": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 58.79932403564453
+                },
+                "KO": {
+                    "max_int": 1,
+                    "qubits": 1,
+                    "random_int": 1,
+                    "price": 62.2599983215332
+                }
+            },
             "stocks": [
+                "AAPL",
+                "IBM",
                 "TRV",
-                "DIS",
-                "CAT",
-                "AMGN",
-                "JNJ",
-                "PG",
-                "HD",
-                "V",
+                "BA",
                 "NKE",
-                "AAPL"
+                "PG",
+                "UNH",
+                "CRM",
+                "CSCO",
+                "KO"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",
             "n_stocks": 10
-        },
-        {
-            "stocks": [
-                "DIS",
-                "AAPL",
-                "MRK",
-                "AXP",
-                "CRM",
-                "KO",
-                "CAT",
-                "AMGN",
-                "HD",
-                "MMM",
-                "MCD"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 11
-        },
-        {
-            "stocks": [
-                "IBM",
-                "HON",
-                "CVX",
-                "DIS",
-                "CAT",
-                "UNH",
-                "MCD",
-                "INTC",
-                "MRK",
-                "JNJ",
-                "VZ",
-                "TRV"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 12
-        },
-        {
-            "stocks": [
-                "AXP",
-                "PG",
-                "AAPL",
-                "VZ",
-                "DIS",
-                "MRK",
-                "TRV",
-                "HON",
-                "JPM",
-                "CSCO",
-                "HD",
-                "MSFT",
-                "AMGN"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 13
-        },
-        {
-            "stocks": [
-                "AMGN",
-                "NKE",
-                "HON",
-                "DIS",
-                "JNJ",
-                "TRV",
-                "PG",
-                "KO",
-                "MMM",
-                "VZ",
-                "CVX",
-                "HD",
-                "MRK",
-                "GS"
-            ],
-            "start": "2015-01-01",
-            "end": "2025-01-01",
-            "n_stocks": 14
         }
     ]
 }
