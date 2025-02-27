@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import scipy
 
+import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -133,3 +134,14 @@ def bitstrings_to_optimized_portfolios(bitstrings, assets_to_qubits):
             portfolio[asset] = bitstring_to_int(bits)
         portfolios.append(portfolio)
     return portfolios
+
+def normalize_linear_combination(lin_comb):
+    """Normalize a PennyLane LinearCombination operation."""
+    coeffs, ops = lin_comb.terms() # Extract coefficients and operators
+    norm_factor = sum(abs(c) for c in coeffs)  # Compute sum of absolute values
+
+    if norm_factor == 0:
+        raise ValueError("Cannot normalize: all coefficients are zero.")
+
+    normalized_coeffs = [c / norm_factor for c in coeffs]
+    return qml.ops.op_math.LinearCombination(normalized_coeffs, ops)

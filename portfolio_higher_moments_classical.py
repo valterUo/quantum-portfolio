@@ -38,6 +38,18 @@ class HigherMomentPortfolioOptimizer:
         self.x = result.x
         return result.x
     
+
+    def un_optimize_portfolio_with_higher_moments(self):
+        num_assets = len(self.expected_returns)
+        #constraints = [{'type': 'ineq', 'fun': lambda x: np.sum(x) - 1}]
+        bounds = [(0, 1) for _ in range(num_assets)]
+        objective = self.get_objective()
+        w0 = np.ones(num_assets) / num_assets
+        result = minimize(objective, w0, bounds=bounds) #, constraints=constraints)
+        self.weights = dict(zip(self.stocks, result.x))
+        self.x = result.x
+        return result.x
+    
     
     def get_optimal_value(self):
         objective = self.get_objective()

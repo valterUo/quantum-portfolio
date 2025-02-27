@@ -1,0 +1,69 @@
+{
+    "0": {
+        "exact_solution": {
+            "smallest_eigenvalues": [
+                -0.4805675874730491
+            ],
+            "smallest_bitstrings": [
+                [
+                    0,
+                    0,
+                    1,
+                    0,
+                    1
+                ]
+            ],
+            "first_excited_energy": -0.48014207025370076,
+            "optimized_portfolio": [
+                {
+                    "HON": 0,
+                    "JNJ": 5
+                }
+            ],
+            "second_optimized_portfolio": [
+                {
+                    "HON": 2,
+                    "JNJ": 2
+                }
+            ]
+        },
+        "qaoa_solution": {
+            "two_most_probable_states": [
+                111.0,
+                1001.0
+            ],
+            "final_expectation_value": -0.4492444447517137,
+            "params": [
+                [
+                    -2.90906789709769,
+                    7.690365819169544,
+                    7.744463667498167,
+                    2.39552777951025,
+                    1.8078403621851065
+                ],
+                [
+                    -2.911963150947138,
+                    1.4306863879840306,
+                    -0.19083326597289363,
+                    -1.1294427871973358,
+                    -0.24696980248356817
+                ]
+            ],
+            "total_steps": 2000,
+            "states_probs": [
+                0.07632980430675108,
+                0.0991005571658085
+            ],
+            "optimized_portfolios": [
+                {
+                    "HON": 0,
+                    "JNJ": 7
+                },
+                {
+                    "HON": 2,
+                    "JNJ": 4
+                }
+            ]
+        }
+    }
+}

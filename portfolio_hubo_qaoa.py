@@ -1,13 +1,16 @@
 import itertools
 import optax
 import jax
+jax.config.update("jax_enable_x64", True)
+#jax.config.update('jax_default_device', jax.devices('cpu')[0])
 import pennylane as qml
 from pennylane import numpy as np
 from jax import numpy as jnp
 from pypfopt import EfficientFrontier
+#import networkx as nx
 
 from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
-from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, smallest_eigenpairs, smallest_sparse_eigenpairs
+from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)
 
@@ -18,7 +21,8 @@ class HigherOrderPortfolioQAOA:
                  prices_now,
                  expected_returns, 
                  covariance_matrix, 
-                 budget, 
+                 budget,
+                 max_qubits,
                  coskewness_tensor = None, 
                  cokurtosis_tensor = None, 
                  risk_aversion = 3, 
@@ -55,12 +59,13 @@ class HigherOrderPortfolioQAOA:
                 self.num_qubits_per_asset[asset] = N
                 print(f"Number of qubits for asset {asset}: {N}")
         
-        print("Number of qubits per asset: ", self.num_qubits_per_asset)
+        #print("Number of qubits per asset: ", self.num_qubits_per_asset)
 
         assert len(stocks) == len(expected_returns)
         assert len(expected_returns) == len(covariance_matrix)
         assert len(expected_returns) == len(covariance_matrix[0])
         assert risk_aversion > 0
+       
 
         self.cost_hubo_int = {}
         self.cost_hubo_bin = {}
@@ -75,15 +80,17 @@ class HigherOrderPortfolioQAOA:
             self.total_qubits += self.num_qubits_per_asset[asset]
         
         self.n_qubits = self.total_qubits
+        print("Total number of qubits: ", self.n_qubits)
+        assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
 
-        print("Constructing cost hubo with integer variables")
+        #print("Constructing cost hubo with integer variables")
         self.construct_cost_hubo_int()
         
         if self.coskewness_tensor is None and self.cokurtosis_tensor is None:
             ef = EfficientFrontier(self.expected_returns, self.covariance_matrix)
             weights = ef.max_quadratic_utility(risk_aversion=risk_aversion)
 
-            print("Optimized Weights (considering variance and returns):")
+            #print("Optimized Weights (considering variance and returns):")
             for asset, weight in weights.items():
                 print(f"{asset}: {weight:.2%}")
 
@@ -93,7 +100,7 @@ class HigherOrderPortfolioQAOA:
             maximized_utility = -0.5 * risk_aversion * numpy_weights.T @ self.covariance_matrix @ numpy_weights \
                             + self.expected_returns @ numpy_weights
             print("Maximized utility from classical mean variance: ", maximized_utility)
-            scaler = max(maximized_utility, 1)
+            scaler = max(maximized_utility*252, 1)
         else:
             hef = HigherMomentPortfolioOptimizer(self.stocks,
                                                  expected_returns, 
@@ -106,48 +113,59 @@ class HigherOrderPortfolioQAOA:
             print("Optimized Weights (considering variance, skewness and kurtosis):")
             for asset, weight in zip(stocks, weights):
                 print(f"{asset}: {weight:.2%}")
+
+            #weights = hef.un_optimize_portfolio_with_higher_moments()
+            
+            #print("Un Optimized Weights (considering variance, skewness and kurtosis):")
+            #for asset, weight in zip(stocks, weights):
+            #    print(f"{asset}: {weight:.2%}")
                 
             #over_optimistic_allocation = {}
             #for asset, weight in zip(stocks, weights):
             #    over_optimistic_allocation[asset] = int(np.floor(weight*budget/prices_now[asset]))
                 
-            allocation, left_overs = hef.get_discrete_allocation(self.prices_now, self.budget)
-            print("Left over budget: ", left_overs)
+            #allocation, left_overs = hef.get_discrete_allocation(self.prices_now, self.budget)
+            #print("Left over budget: ", left_overs)
+
+            #allocation = {}
+            #for asset, weight in zip(stocks, weights):
+            #    allocation[asset] = int(np.floor(weight*budget/prices_now[asset]))
+
+            #print("Optimized Discrete Allocation:")
+            #for asset, amount in allocation.items():
+            #    print(f"{asset}: {amount}")
             
-            print("Optimized Discrete Allocation:")
-            for asset, amount in allocation.items():
-                print(f"{asset}: {amount}")
+            #value = self.get_objective_value(self.stocks, allocation) #hef.get_optimal_value()*100
+            #print("Maximized utility from classical higher moments: ", value)
             
-            value = self.get_objective_value(self.stocks, allocation) #hef.get_optimal_value()*100
-            print("Maximized utility from classical higher moments: ", value)
-            scaler = max(np.abs(value)*252, 1)
+            scaler = max(self.budget**2, 1)
             
                 
-        self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
-        print("Adding budget constraints to the cost function -> constructing full hubo problem")
+        self.budget_constraint = self.construct_budget_constraint(scaler=1)
+        #print("Adding budget constraints to the cost function -> constructing full hubo problem")
         for var, coeff in self.budget_constraint.items():
             if var in self.cost_hubo_int:
                 self.cost_hubo_int[var] += coeff
             else:
                 self.cost_hubo_int[var] = coeff
-        print("Replacing integer variables with binary variables")
+        #print("Replacing integer variables with binary variables")
         self.replace_integer_variables_with_binary_variables()
-        print("Simplifying the binary cost function")
+        #print("Simplifying the binary cost function")
         self.simplify_cost_hubo_bin()
-        print("Converting binary cost function to Ising Hamiltonian")
+        #print("Converting binary cost function to Ising Hamiltonian")
         self.cost_hubo_bin_to_ising_hamiltonian()
 
-        print("Constructing QAOA circuits")
+        #print("Constructing QAOA circuits")
         self.qaoa_circuit, self.qaoa_probs_circuit = self.get_QAOA_circuits()
         
-        if self.coskewness_tensor is not None and self.cokurtosis_tensor is not None:
-            target_bitstring = ""
-            for asset in self.assets_to_qubits:
-                qubits = self.assets_to_qubits[asset]
-                bits = int_to_bitstring(allocation[asset], len(qubits))
-                target_bitstring += bits
+        #if self.coskewness_tensor is not None and self.cokurtosis_tensor is not None:
+        #    target_bitstring = ""
+        #    for asset in self.assets_to_qubits:
+        #        qubits = self.assets_to_qubits[asset]
+        #        bits = int_to_bitstring(allocation[asset], len(qubits))
+        #        target_bitstring += bits
             
-            print("Performing warm start for QAOA with target bitstring ", target_bitstring)
+            #print("Performing warm start for QAOA with target bitstring ", target_bitstring)
             
             #self.init_params = self.warm_start_qaoa(target_bitstring)
 
@@ -321,13 +339,14 @@ class HigherOrderPortfolioQAOA:
                                                 + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
                                                 + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
                                                 + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3))
-                
+            
 
     def get_QAOA_circuits(self):
         dev = qml.device('default.qubit', wires=self.n_qubits)
         
         cost_hamiltonian = self.get_cost_hamiltonian()
-        mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits))
+        #complete_graph = nx.complete_graph(self.n_qubits)
+        mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits)) #qml.qaoa.xy_mixer(complete_graph)
 
         def qaoa_layer(gamma, alpha):
             qml.qaoa.cost_layer(gamma, cost_hamiltonian)
@@ -444,45 +463,73 @@ class HigherOrderPortfolioQAOA:
     
     
     def solve_with_qaoa_jax(self):
-        solver = optax.adamw(learning_rate=0.01)
-        
-        params = self.init_params.copy()
-        params = jnp.array(params)
+        self.draw_qaoa_circuit()
 
-        total_steps = 0
-        attempts = 0
-        limit_steps = 1000
-        jit_circuit = jax.jit(self.qaoa_circuit)
+        solver = optax.adamw(learning_rate=0.5) #weight_decay=0.001)
         
-        while True:
-            steps = 10
-            opt_state = solver.init(params)
-            for _ in range(steps):
-                grad = jax.grad(jit_circuit)(params)
-                updates, opt_state = solver.update(grad, opt_state, params)
-                params = optax.apply_updates(params, updates)
-            
-            total_steps += steps
-            probs = self.qaoa_probs_circuit(params)
-            most_probable_state = np.argsort(probs)[-1]
-            most_probable_state = int_to_bitstring(most_probable_state, self.n_qubits)
-            print(f"Most probable state: {most_probable_state} and {self.smallest_bitstrings} with probs {most_probable_state}")
-            
-            smallest_bitstrings = ["".join([str(b) for b in bitstring]) for bitstring in self.smallest_bitstrings]
-            if most_probable_state in smallest_bitstrings:
-                pass
-                #break
-            if total_steps > limit_steps:
-                print("Optimization did not converge")
-                print("Trying with a new initialization")
-                self.init_params = jnp.array(0.01*np.pi*np.random.rand(2, self.layers))
-                params = self.init_params.copy()
-                total_steps = 0
-                attempts += 1
-            if attempts > 3:
-                print("Optimization did not converge to the known optimal solution after ", attempts, " attempts.")
-                break
+        #params = self.init_params.copy()
+        #params = jnp.array(params)
 
+        key = jax.random.PRNGKey(42)
+        params = jnp.pi * jax.random.uniform(key, shape=(2, self.layers)) #jnp.array(jnp.pi*jax.random.rand(2, self.layers))
+        qaoa_circuit = jax.jit(self.qaoa_circuit)
+
+        # JIT-compile value and gradient computation
+        #@jax.jit
+        def step(params, opt_state):
+            grads = jax.grad(qaoa_circuit)(params)  # Compute loss and grads
+            updates, opt_state = solver.update(grads, opt_state, params)  # Compute updates
+            params = optax.apply_updates(params, updates)  # Apply updates
+            return params, opt_state
+        
+        #total_steps = 0
+        #attempts = 0
+        #limit_steps = 10000
+        #jit_circuit = jax.jit(self.qaoa_circuit)
+        #grad_fn = jax.jit(jax.grad(jit_circuit))
+        
+        #while True:
+        steps = 2000
+        opt_state = solver.init(params)
+        for i in range(steps):
+            params, opt_state = step(params, opt_state)
+            if i % 1000 == 0:
+                print(f"Step {i}, expectation value: {qaoa_circuit(params)}")
+                probs = self.qaoa_probs_circuit(params)
+                most_probable_state = np.argsort(probs)[-1]
+                most_probable_state = int_to_bitstring(most_probable_state, self.n_qubits)
+                print(f"Most probable state: {most_probable_state} and {self.smallest_bitstrings} with probs {probs}")
+
+        #    grad = grad_fn(params) #jax.grad(jit_circuit)(params)
+        #    updates, opt_state = solver.update(grad, opt_state, params)
+        #    #params = optax.apply_updates(params, updates)
+        #    params = optax.apply_updates(params, updates)
+        #
+        #    if i % 1000 == 0:
+        #        print(f"Step {i}, expectation value: {jit_circuit(params)}")
+        #        probs = self.qaoa_probs_circuit(params)
+        #        most_probable_state = np.argsort(probs)[-1]
+        #        most_probable_state = int_to_bitstring(most_probable_state, self.n_qubits)
+        #        print(f"Most probable state: {most_probable_state} and {self.smallest_bitstrings} with probs {probs}")
+        
+        #smallest_bitstrings = ["".join([str(b) for b in bitstring]) for bitstring in self.smallest_bitstrings]
+            
+        #if most_probable_state in smallest_bitstrings:
+        #    pass
+            #break
+        #if total_steps > limit_steps:
+        #    break
+        #    print("Optimization did not converge")
+        #    print("Trying with a new initialization")
+        #    self.init_params = jnp.array(0.01*np.pi*np.random.rand(2, self.layers))
+        #    params = self.init_params.copy()
+        #    total_steps = 0
+        #    attempts += 1
+        #if attempts > 3:
+        #    print("Optimization did not converge to the known optimal solution after ", attempts, " attempts.")
+        #    break
+
+        probs = self.qaoa_probs_circuit(params)
         final_expectation_value = self.qaoa_circuit(params)
         two_most_probable_states = np.argsort(probs)[-2:]
         states_probs = [probs[i] for i in two_most_probable_states]
@@ -502,7 +549,7 @@ class HigherOrderPortfolioQAOA:
         objective_values = [self.get_objective_value(self.stocks, optimized_portfolios[i]) for i in range(2)]
         print(f"Objective values: {objective_values}")
         
-        return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
+        return two_most_probable_states, final_expectation_value, params, steps, states_probs, optimized_portfolios
 
 
     def get_assets_to_qubits(self):
@@ -520,7 +567,9 @@ class HigherOrderPortfolioQAOA:
     def get_cost_hubo_bin_simplified(self):
         return self.cost_hubo_bin_simplified
     
-    def get_cost_hamiltonian(self):
+    def get_cost_hamiltonian(self, normalized = True):
+        if normalized:
+            return normalize_linear_combination(self.hamiltonian)
         return self.hamiltonian
     
 
