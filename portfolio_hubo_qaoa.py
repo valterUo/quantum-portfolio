@@ -51,6 +51,8 @@ class HigherOrderPortfolioQAOA:
             # Thus, for each asset we have to choose the smallest N such that 2^N > floor(bugdet/price_now)    
             for asset in stocks:
                 N = int(np.ceil(np.log2(np.ceil(budget/prices_now[asset]))))
+                if N == 0:
+                    N = 1
                 self.num_qubits_per_asset[asset] = N
                 print(f"Number of qubits for asset {asset}: {N}")
         else:
