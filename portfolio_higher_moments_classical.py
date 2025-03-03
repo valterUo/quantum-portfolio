@@ -36,7 +36,7 @@ class HigherMomentPortfolioOptimizer:
         result = minimize(objective, w0, bounds=bounds, constraints=constraints)
         self.weights = dict(zip(self.stocks, result.x))
         self.x = result.x
-        return result.x
+        return self.weights
     
 
     def un_optimize_portfolio_with_higher_moments(self):
@@ -48,7 +48,7 @@ class HigherMomentPortfolioOptimizer:
         result = minimize(objective, w0, bounds=bounds) #, constraints=constraints)
         self.weights = dict(zip(self.stocks, result.x))
         self.x = result.x
-        return result.x
+        return self.weights
     
     
     def get_optimal_value(self):

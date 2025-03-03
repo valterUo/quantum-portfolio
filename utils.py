@@ -78,7 +78,7 @@ def smallest_eigenpairs(A, filename = None):
         with open(filename, "wb") as f:
             pickle.dump([eigenvalues, eigenvectors], f)
     
-    return smallest_eigenvalues, smallest_eigenvectors, first_excited_energy, first_excited_state
+    return smallest_eigenvalues, smallest_eigenvectors, first_excited_energy, first_excited_state, eigenvalues
 
 def smallest_sparse_eigenpairs(A):
     
@@ -98,7 +98,7 @@ def smallest_sparse_eigenpairs(A):
         smallest_eigenvalues.append(eigenvalues[1])
         smallest_eigenvectors.append(eigenvectors[:, 1])
     
-    return smallest_eigenvalues, smallest_eigenvectors
+    return smallest_eigenvalues, smallest_eigenvectors, eigenvalues
 
 
 def bitstring_to_int(bit_string_sample):
@@ -132,6 +132,9 @@ def bitstrings_to_optimized_portfolios(bitstrings, assets_to_qubits):
         for asset, qubits in assets_to_qubits.items():
             bits = [bitstring[q] for q in qubits]
             portfolio[asset] = bitstring_to_int(bits)
+        for asset in assets_to_qubits.keys():
+            if asset not in portfolio.keys():
+                portfolio[asset] = 0
         portfolios.append(portfolio)
     return portfolios
 

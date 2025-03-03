@@ -7,17 +7,25 @@ import os
 
 experiments = None
 with open("experiments_data.json", "r") as f:
-    experiments = json.load(f)
+    experiments = list(json.load(f)["data"])
 
-results = []
+output_file = "portfolio_optimization_results.json"
 
-for experiment in experiments["data"]:
+init_experiment = 0
+# Load existing data if file exists
+if os.path.exists(output_file):
+    with open(output_file, 'r') as f:
+        existing_results = json.load(f)
+    init_experiment = max([int(k) for k in existing_results.keys()]) + 1
+
+
+for i, experiment in enumerate(experiments[init_experiment:]):
     results_for_experiment = {}
     stocks = experiment["stocks"]
     start = experiment["start"]
     end = experiment["end"]
     risk_aversion = 3
-    n_layers = 2
+    n_layers = 5
     max_qubits = 15
     budget = experiment["budget"]
     print(budget)
@@ -45,25 +53,45 @@ for experiment in experiments["data"]:
                                             log_encoding = True, 
                                             layers = n_layers,
                                             risk_aversion = risk_aversion)
+    
+    assets_to_qubits = portfolio_hubo.get_assets_to_qubits()
+    
+    weights, allocation, value, left_overs = portfolio_hubo.solve_with_continuous_variables()
+
+    continuous_variables_solution = {
+        "weights": weights,
+        "allocation": allocation,
+        "value": value,
+        "left_overs": left_overs
+    }
 
     (
         smallest_eigenvalues, 
         smallest_bitstrings, 
         first_excited_energy, 
         optimized_portfolio, 
-        second_optimized_portfolio 
+        second_optimized_portfolio,
+        eigenvalues,
+        objective_values,
+        result1, 
+        result2
     ) = portfolio_hubo.solve_exactly()
 
     exact_solution = {
         "smallest_eigenvalues": smallest_eigenvalues,
-        "smallest_bitstrings": smallest_bitstrings,
+        "smallest_bitstrings": ["".join([str(i) for i in bits]) for bits in smallest_bitstrings],
         "first_excited_energy": first_excited_energy,
         "optimized_portfolio": optimized_portfolio,
-        "second_optimized_portfolio": second_optimized_portfolio
+        "second_optimized_portfolio": second_optimized_portfolio,
+        "spectrum": eigenvalues,
+        "objective_values": objective_values,
+        "result_with_budget": result1,
+        "result_with_budget_excited": result2
     }
 
     for key, value in exact_solution.items():
-        print(f"{key}: {value}")
+        if key != "spectrum":
+            print(f"{key}: {value}")
     
     (
         two_most_probable_states, 
@@ -71,59 +99,55 @@ for experiment in experiments["data"]:
         params, 
         total_steps, 
         states_probs, 
-        optimized_portfolios
-    ) = portfolio_hubo.solve_with_qaoa_jax()
+        optimized_portfolios,
+        training_history,
+        objective_values,
+        result1
+    ) = portfolio_hubo.solve_with_qaoa_cma_es() #solve_with_qaoa_jax()
 
     qaoa_solution = {
-        "two_most_probable_states": [float(v) for v in two_most_probable_states],
+        "two_most_probable_states": two_most_probable_states,
         "final_expectation_value": float(final_expectation_value),
         "params": params.tolist(),
         "total_steps": total_steps,
         "states_probs": [float(v) for v in states_probs],
-        "optimized_portfolios": optimized_portfolios
+        "optimized_portfolios": optimized_portfolios,
+        "training_history": training_history,
+        "objective_values": objective_values,
+        "result_with_budget": result1
     }
 
     for key, value in qaoa_solution.items():
-        print(f"{key}: {value}")
+        if key != "training_history":
+            print(f"{key}: {value}")
 
     hyperparams = {
-        "stocks": stocks,
+        "stocks": [str(s) for s in stocks],
         "start": start,
         "end": end,
         "risk_aversion": risk_aversion,
         "max_qubits": max_qubits,
         "budget": budget,
         "log_encoding": True,
-        "layers": n_layers
+        "layers": n_layers,
+        "prices_now": {str(k): float(v) for k, v in prices_now.items()},
+        "assets_to_qubits": {str(k): v for k, v in assets_to_qubits.items()}
     }
 
+    results_for_experiment["hyperparams"] = hyperparams
+    results_for_experiment["continuous_variables_solution"] = continuous_variables_solution
     results_for_experiment["exact_solution"] = exact_solution
     results_for_experiment["qaoa_solution"] = qaoa_solution
-    results.append(results_for_experiment)
-    break
-    
 
-# Define the output file path
-output_file = "portfolio_optimization_results.json"
-
-# Load existing data if file exists
-if os.path.exists(output_file):
-    try:
+    # Load existing data if file exists
+    if os.path.exists(output_file):
         with open(output_file, 'r') as f:
             existing_results = json.load(f)
-            existing_results = existing_results["results"]
-    except json.JSONDecodeError:
-        # Handle case where file exists but isn't valid JSON
-        existing_results = []
-else:
-    existing_results = []
+    else:
+        existing_results = {}
 
-# Update existing results with new data
-existing_results.append(results)
+    existing_results[i + init_experiment] = results_for_experiment
 
-# Write the updated results back to the file
-with open(output_file, 'w') as f:
-    json.dump({"results": existing_results}, f, indent=2)
-
-print(f"Results appended to {output_file}")
-
+    # Write the updated results back to the file
+    with open(output_file, 'w') as f:
+        json.dump(existing_results, f, indent=4)

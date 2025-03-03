@@ -9,6 +9,7 @@ __pycache__/
 data/
 myenv/
 myenv2/
+outcmaes/
 
 # Distribution / packaging
 .Python
