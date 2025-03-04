@@ -367,7 +367,7 @@ class HigherOrderPortfolioQAOA:
             for asset, weight in weights.items():
                 print(f"{asset}: {weight:.2%}")
                 
-            allocation, left_overs = hef.get_discrete_allocation(self.prices_now, self.budget)
+            allocation, left_overs = hef.get_discrete_allocation(weights, self.prices_now, self.budget)
             print("Left over budget: ", left_overs)
 
             print("Optimized Discrete Allocation:")
@@ -401,9 +401,12 @@ class HigherOrderPortfolioQAOA:
         result2 = self.satisfy_budget_constraint(second_optimized_portfolio)
         eigenvalues = [float(v) for v in eigenvalues]
 
-        objective_values = [float(self.get_objective_value(self.stocks, allocation)) for allocation in optimized_portfolio + second_optimized_portfolio]
+        objective_values = [float(self.get_objective_value(self.stocks, allocation)) for allocation in optimized_portfolio]
+        result1["objective_values"] = objective_values[0]
+        objective_values = [float(self.get_objective_value(self.stocks, allocation)) for allocation in second_optimized_portfolio]
+        result2["objective_values"] = objective_values[0]
         
-        return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio, eigenvalues, objective_values, result1, result2
+        return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio, eigenvalues, result1, result2
 
     
     def satisfy_budget_constraint(self, optimized_portfolio):
@@ -670,31 +673,31 @@ class HigherOrderPortfolioQAOA:
         return two_most_probable_states, final_expectation_value, params, total_steps, states_probs, optimized_portfolios
     
     
-    def get_objective_value(self, stocks, optimized_portfolio):
-        for stock in stocks:
+    def get_objective_value(self, optimized_portfolio):
+        for stock in self.stocks:
             if stock not in optimized_portfolio:
                 optimized_portfolio[stock] = 0
         
         objective_value = 0
-        for i in range(len(stocks)):
-            objective_value -= optimized_portfolio[stocks[i]]*self.expected_returns[i]
+        for i in range(len(self.stocks)):
+            objective_value -= optimized_portfolio[self.stocks[i]]*self.expected_returns[i]
             
-        for i in range(len(stocks)):
-            for j in range(len(stocks)):
-                objective_value += (self.risk_aversion/2)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*self.covariance_matrix[i][j]
+        for i in range(len(self.stocks)):
+            for j in range(len(self.stocks)):
+                objective_value += (self.risk_aversion/2)*optimized_portfolio[self.stocks[i]]*optimized_portfolio[self.stocks[j]]*self.covariance_matrix[i][j]
         
         if self.coskewness_tensor is not None:
-            for i in range(len(stocks)):
-                for j in range(len(stocks)):
-                    for k in range(len(stocks)):
-                        objective_value -= (self.risk_aversion/6)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*optimized_portfolio[stocks[k]]*self.coskewness_tensor[i][j][k]
+            for i in range(len(self.stocks)):
+                for j in range(len(self.stocks)):
+                    for k in range(len(self.stocks)):
+                        objective_value -= (self.risk_aversion/6)*optimized_portfolio[self.stocks[i]]*optimized_portfolio[self.stocks[j]]*optimized_portfolio[self.stocks[k]]*self.coskewness_tensor[i][j][k]
         
         if self.cokurtosis_tensor is not None:
-            for i in range(len(stocks)):
-                for j in range(len(stocks)):
-                    for k in range(len(stocks)):
-                        for l in range(len(stocks)):
-                            objective_value += (self.risk_aversion/24)*optimized_portfolio[stocks[i]]*optimized_portfolio[stocks[j]]*optimized_portfolio[stocks[k]]*optimized_portfolio[stocks[l]]*self.cokurtosis_tensor[i][j][k][l]
+            for i in range(len(self.stocks)):
+                for j in range(len(self.stocks)):
+                    for k in range(len(self.stocks)):
+                        for l in range(len(self.stocks)):
+                            objective_value += (self.risk_aversion/24)*optimized_portfolio[self.stocks[i]]*optimized_portfolio[self.stocks[j]]*optimized_portfolio[self.stocks[k]]*optimized_portfolio[self.stocks[l]]*self.cokurtosis_tensor[i][j][k][l]
         
         return objective_value
     

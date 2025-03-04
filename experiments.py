@@ -72,7 +72,6 @@ for i, experiment in enumerate(experiments[init_experiment:]):
         optimized_portfolio, 
         second_optimized_portfolio,
         eigenvalues,
-        objective_values,
         result1, 
         result2
     ) = portfolio_hubo.solve_exactly()
@@ -84,7 +83,6 @@ for i, experiment in enumerate(experiments[init_experiment:]):
         "optimized_portfolio": optimized_portfolio,
         "second_optimized_portfolio": second_optimized_portfolio,
         "spectrum": eigenvalues,
-        "objective_values": objective_values,
         "result_with_budget": result1,
         "result_with_budget_excited": result2
     }

@@ -60,8 +60,8 @@ class HigherMomentPortfolioOptimizer:
         return -objective(w)
     
     
-    def get_discrete_allocation(self, latest_prices, total_portfolio_value):
-        allocator = DiscreteAllocation(self.weights, latest_prices, total_portfolio_value)
+    def get_discrete_allocation(self, weights, latest_prices, total_portfolio_value):
+        allocator = DiscreteAllocation(weights, latest_prices, total_portfolio_value)
         self.discrete_allocation = allocator.lp_portfolio()
         return self.discrete_allocation
         
