@@ -87,9 +87,11 @@ class HigherOrderPortfolioQAOA:
         assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
 
         #print("Constructing cost hubo with integer variables")
-        self.construct_cost_hubo_int()    
+        self.construct_cost_hubo_int()
+
+        scaler = sum([abs(v) for v in self.cost_hubo_int.values()])
                 
-        self.budget_constraint = self.construct_budget_constraint(scaler=1)
+        self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
         #print("Adding budget constraints to the cost function -> constructing full hubo problem")
         for var, coeff in self.budget_constraint.items():
             if var in self.cost_hubo_int:
@@ -349,7 +351,7 @@ class HigherOrderPortfolioQAOA:
             for asset, amount in allocation.items():
                 print(f"{asset}: {amount}")
 
-            value = self.get_objective_value(self.stocks, allocation)
+            value = self.get_objective_value(allocation)
             print("Maximized utility from continuous mean variance: ", value)
 
             return weights, allocation, value, left_overs
@@ -378,7 +380,7 @@ class HigherOrderPortfolioQAOA:
                 if stock not in allocation:
                     allocation[stock] = 0
             
-            value = self.get_objective_value(self.stocks, allocation)
+            value = self.get_objective_value(allocation)
             print("Maximized utility from continuous higher moments: ", value)
             
             return weights, allocation, value, left_overs
@@ -401,10 +403,13 @@ class HigherOrderPortfolioQAOA:
         result2 = self.satisfy_budget_constraint(second_optimized_portfolio)
         eigenvalues = [float(v) for v in eigenvalues]
 
-        objective_values = [float(self.get_objective_value(self.stocks, allocation)) for allocation in optimized_portfolio]
-        result1["objective_values"] = objective_values[0]
-        objective_values = [float(self.get_objective_value(self.stocks, allocation)) for allocation in second_optimized_portfolio]
-        result2["objective_values"] = objective_values[0]
+        objective_values = [float(self.get_objective_value(allocation)) for allocation in optimized_portfolio]
+        for i, r in enumerate(result1):
+            r["objective_value"] = objective_values[i]
+
+        objective_values = [float(self.get_objective_value(allocation)) for allocation in second_optimized_portfolio]
+        for i, r in enumerate(result2):
+            r["objective_value"] = objective_values[i]
         
         return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio, eigenvalues, result1, result2
 
@@ -540,7 +545,7 @@ class HigherOrderPortfolioQAOA:
         
         print(f"Final expectation value: {final_expectation_value}")
         
-        objective_values = [float(self.get_objective_value(self.stocks, optimized_portfolios[i])) for i in range(2)]
+        objective_values = [float(self.get_objective_value(optimized_portfolios[i])) for i in range(2)]
         
         print(f"Objective values: {objective_values}")
         
@@ -607,7 +612,7 @@ class HigherOrderPortfolioQAOA:
         two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable_states]
         optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
         result1 = self.satisfy_budget_constraint(optimized_portfolios)
-        objective_values = [float(self.get_objective_value(self.stocks, optimized_portfolios[i])) for i in range(2)]
+        objective_values = [float(self.get_objective_value(optimized_portfolios[i])) for i in range(2)]
         training_history = self.cma_result_to_dict(result.result)
         return two_most_probable_states, final_expectation_value, optimized_params, es.result.iterations, states_probs, optimized_portfolios, training_history, objective_values, result1
 
@@ -665,7 +670,7 @@ class HigherOrderPortfolioQAOA:
             print(f"Two most probable states: {two_most_probable_states} with probabilities {states_probs}")
             print(f"Final expectation value: {final_expectation_value}")
             print(f"Optimized portfolios: {optimized_portfolios}")
-            objective_values = [self.get_objective_value(self.stocks, optimized_portfolios[i]) for i in range(2)]
+            objective_values = [self.get_objective_value(optimized_portfolios[i]) for i in range(2)]
             print(f"Objective values: {objective_values}")
             if "".join(two_most_probable_states[-1]) in self.smallest_bitstrings:
                 break
@@ -699,7 +704,7 @@ class HigherOrderPortfolioQAOA:
                         for l in range(len(self.stocks)):
                             objective_value += (self.risk_aversion/24)*optimized_portfolio[self.stocks[i]]*optimized_portfolio[self.stocks[j]]*optimized_portfolio[self.stocks[k]]*optimized_portfolio[self.stocks[l]]*self.cokurtosis_tensor[i][j][k][l]
         
-        return objective_value
+        return -objective_value
     
     def warm_start_qaoa(self, target_bitstring):
         opt = qml.AdamOptimizer(stepsize=0.01)
