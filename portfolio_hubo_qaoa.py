@@ -602,9 +602,9 @@ class HigherOrderPortfolioQAOA:
         optimized_params = result.result.xbest
         final_expectation_value = qaoa_circuit(optimized_params)
         probs = qaoa_probs_circuit(optimized_params)[::-1]
-        two_most_probable_states = np.argsort(probs)[-2:]
-        states_probs = [probs[i] for i in two_most_probable_states]
-        two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable_states]
+        two_most_probable = np.argsort(probs)[-2:]
+        states_probs = [probs[i] for i in two_most_probable]
+        two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable]
         optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
         result1 = self.satisfy_budget_constraint(optimized_portfolios)
         objective_values = [float(self.get_objective_value(self.stocks, optimized_portfolios[i])) for i in range(2)]
