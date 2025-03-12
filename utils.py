@@ -114,8 +114,7 @@ def int_to_bitstring(int_sample, n_qubits):
 
 def basis_vector_to_bitstring(basis_vector):
     assert np.sum(basis_vector) == 1, "Input must be a basis vector"
-    # I think the basis vector returned from scipy.linalg.eig is "turned around"
-    index = np.argmax(basis_vector[::-1])
+    index = np.argmax(basis_vector)
     num_qubits = max(int(np.log2(len(basis_vector))), 1)
     bitstring = format(index, f'0{num_qubits}b')
     #bitstring = np.array(list(np.binary_repr(index).zfill(num_qubits)))

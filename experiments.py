@@ -24,8 +24,8 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     stocks = experiment["stocks"]
     start = experiment["start"]
     end = experiment["end"]
-    risk_aversion = 3
-    n_layers = 5
+    risk_aversion = 0.1
+    n_layers = 1
     max_qubits = 15
     budget = experiment["budget"]
     print(budget)
@@ -37,8 +37,9 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     stocks = returns.columns
 
     numpy_returns = returns.to_numpy()
-    expected_returns = numpy_returns.mean(axis=0)*252
-    covariance_matrix = np.cov(numpy_returns, rowvar=False)*252
+    expected_returns = returns.add(1).prod() ** (252 / len(returns)) #mean(axis=0)**(252/len(returns))
+    expected_returns = expected_returns.to_numpy()
+    covariance_matrix = np.cov(numpy_returns, rowvar=False)*(252/len(returns))
     coskewness_tensor = coskewness(numpy_returns)#*(252**2)
     cokurtosis_tensor = cokurtosis(numpy_returns)#*(252**3)
 
@@ -119,12 +120,14 @@ for i, experiment in enumerate(experiments[init_experiment:]):
         if key != "training_history":
             print(f"{key}: {value}")
 
+    n_qubits = portfolio_hubo.get_n_qubits()
+    n_layers = portfolio_hubo.get_layers()
     hyperparams = {
         "stocks": [str(s) for s in stocks],
         "start": start,
         "end": end,
         "risk_aversion": risk_aversion,
-        "max_qubits": max_qubits,
+        "n_qubits": n_qubits,
         "budget": budget,
         "log_encoding": True,
         "layers": n_layers,

@@ -24,10 +24,10 @@ class HigherOrderPortfolioQAOA:
                  covariance_matrix, 
                  budget,
                  max_qubits,
+                 layers = None,
                  coskewness_tensor = None, 
                  cokurtosis_tensor = None, 
                  risk_aversion = 3, 
-                 layers = 1, 
                  mixer = "x", 
                  log_encoding = False):
         # Implementation assumes that stocks and other data are ordered to match
@@ -37,13 +37,11 @@ class HigherOrderPortfolioQAOA:
         self.coskewness_tensor = coskewness_tensor
         self.cokurtosis_tensor = cokurtosis_tensor
         self.risk_aversion = risk_aversion
-        self.layers = layers
         self.mixer = mixer
         self.log_encoding = log_encoding
         self.budget = budget
         self.num_assets = len(expected_returns)
         self.prices_now = prices_now
-        self.init_params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
         self.num_qubits_per_asset = {}
         
         if log_encoding:
@@ -51,7 +49,7 @@ class HigherOrderPortfolioQAOA:
             # Each asset can be bought at most floor(bugdet/price_now) times
             # Thus, for each asset we have to choose the smallest N such that 2^N > floor(bugdet/price_now)    
             for asset in stocks:
-                N = int(np.floor(np.log2(np.ceil(budget/prices_now[asset]))))
+                N = int(np.ceil(np.log2(np.ceil(budget/prices_now[asset]))))
                 if N == 0:
                     N = 1
                 self.num_qubits_per_asset[asset] = N
@@ -83,9 +81,12 @@ class HigherOrderPortfolioQAOA:
             self.total_qubits += self.num_qubits_per_asset[asset]
         
         self.n_qubits = self.total_qubits
+        self.layers = self.n_qubits if layers == None else layers
         print("Total number of qubits: ", self.n_qubits)
         assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
 
+        self.init_params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
+        
         #print("Constructing cost hubo with integer variables")
         self.construct_cost_hubo_int()
 
@@ -106,6 +107,13 @@ class HigherOrderPortfolioQAOA:
         self.cost_hubo_bin_to_ising_hamiltonian()
         #print("Constructing QAOA circuits")
         self.qaoa_circuit, self.qaoa_probs_circuit = self.get_QAOA_circuits()
+        
+    
+    def get_n_qubits(self):
+        return self.n_qubits
+    
+    def get_layers(self):
+        return self.layers
 
 
     def construct_cost_hubo_int(self):
@@ -226,32 +234,31 @@ class HigherOrderPortfolioQAOA:
             coeff = self.cost_hubo_bin_simplified[bin_var_set]
             if len(bin_var) == 1:
                 qubit0 = bin_var[0][1]
-                self.hamiltonian += (coeff/2)*(qml.Identity(qubit0) + qml.PauliZ(qubit0))
+                self.hamiltonian += (coeff/2)*(qml.Identity(qubit0) - qml.PauliZ(qubit0))
             elif len(bin_var) == 2:
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
-                #self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) + qml.PauliZ(qubit1))
-                self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) @ qml.Identity(qubit1)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1))
+                self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1))
+                #self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) @ qml.Identity(qubit1)\
+                #                                - qml.Identity(qubit0) @ qml.PauliZ(qubit1)\
+                #                                - qml.PauliZ(qubit0) @ qml.Identity(qubit1)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1))
             elif len(bin_var) == 3:
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
                 qubit2 = bin_var[2][1]
                 
-                #self.hamiltonian += (self.cost_hubo_bin[bin_var]/8)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ 
-                # (qml.Identity(qubit1) + qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) + qml.PauliZ(qubit2))
+                self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2))
                 
                 # Multiply the previous line open to speedup pennylane
-                self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
-                                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2))
+                #self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
+                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2))
                 
             elif len(bin_var) == 4:
                 qubit0 = bin_var[0][1]
@@ -259,25 +266,25 @@ class HigherOrderPortfolioQAOA:
                 qubit2 = bin_var[2][1]
                 qubit3 = bin_var[3][1]
                 
-                #self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) + qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) + qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) + qml.PauliZ(qubit2)) @ (qml.Identity(qubit3) + qml.PauliZ(qubit3))
+                self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2)) @ (qml.Identity(qubit3) - qml.PauliZ(qubit3))
                 
                 # Multiply the previous line open manually, somehow speedsup the process
-                self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3))
+                #self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
+                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3))
             
 
     def get_QAOA_circuits(self):
@@ -517,7 +524,7 @@ class HigherOrderPortfolioQAOA:
             if i % 400 == 0:
                 exp_value_now = float(qaoa_circuit(params))
                 print(f"Step {i}, expectation value: {exp_value_now}")
-                probs = self.qaoa_probs_circuit(params)[::-1]
+                probs = self.qaoa_probs_circuit(params)#[::-1]
                 most_probable_state = np.argsort(probs)[-1]
                 most_probable_state = int_to_bitstring(most_probable_state, self.n_qubits)
                 print(f'Most probable state: {most_probable_state} and {"".join([str(k) for k in self.smallest_bitstrings[0]])}') # with probs {probs}"
@@ -530,7 +537,7 @@ class HigherOrderPortfolioQAOA:
                     }
                 )
 
-        probs = self.qaoa_probs_circuit(params)[::-1]
+        probs = self.qaoa_probs_circuit(params)#[::-1]
         final_expectation_value = self.qaoa_circuit(params)
         two_most_probable_states = np.argsort(probs)[-2:]
         states_probs = [probs[i] for i in two_most_probable_states]
@@ -606,7 +613,7 @@ class HigherOrderPortfolioQAOA:
         result = es.optimize(objective_function)
         optimized_params = result.result.xbest
         final_expectation_value = qaoa_circuit(optimized_params)
-        probs = qaoa_probs_circuit(optimized_params)[::-1]
+        probs = qaoa_probs_circuit(optimized_params)#[::-1]
         two_most_probable = np.argsort(probs)[-2:]
         states_probs = [probs[i] for i in two_most_probable]
         two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable]
