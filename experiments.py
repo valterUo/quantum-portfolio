@@ -2,24 +2,56 @@ import json
 import numpy as np
 import yfinance as yf
 from coskweness_cokurtosis import coskewness, cokurtosis
-from portfolio_hubo_qaoa import HigherOrderPortfolioQAOA
+from portfolio_hubo_qaoa_light import HigherOrderPortfolioQAOA
 import os
+import sys
+import argparse
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description='Run portfolio optimization experiments in batches')
+parser.add_argument('batch_num', type=int, help='Batch number to process (0-indexed)')
+parser.add_argument('total_batches', type=int, help='Total number of batches')
+args = parser.parse_args()
+
+# Validate arguments
+if args.batch_num < 0 or args.total_batches <= 0 or args.batch_num >= args.total_batches:
+    print(f"Error: Invalid batch parameters. batch_num must be between 0 and {args.total_batches-1}")
+    sys.exit(1)
+
+# Load experiments data
 experiments = None
 with open("experiments_data.json", "r") as f:
     experiments = list(json.load(f)["data"])
 
-output_file = "portfolio_optimization_results.json"
+output_file = f"portfolio_optimization_results_batch_{args.batch_num}.json"
 
-init_experiment = 0
-# Load existing data if file exists
+# Calculate which experiments to process in this batch
+total_experiments = len(experiments)
+batch_size = total_experiments // args.total_batches
+remainder = total_experiments % args.total_batches
+
+# Distribute remainder across batches
+start_idx = args.batch_num * batch_size + min(args.batch_num, remainder)
+end_idx = start_idx + batch_size + (1 if args.batch_num < remainder else 0)
+
+print(f"Processing batch {args.batch_num+1}/{args.total_batches}: experiments {start_idx} to {end_idx-1} (total {end_idx-start_idx})")
+
+# Load existing results if file exists
+existing_results = {}
 if os.path.exists(output_file):
     with open(output_file, 'r') as f:
         existing_results = json.load(f)
-    init_experiment = max([int(k) for k in existing_results.keys()]) + 1
 
-
-for i, experiment in enumerate(experiments[init_experiment:]):
+# Process only the experiments for this batch
+for i, experiment in enumerate(experiments[start_idx:end_idx]):
+    experiment_id = start_idx + i
+    
+    # Skip if already processed
+    if str(experiment_id) in existing_results:
+        print(f"Skipping experiment {experiment_id} (already processed)")
+        continue
+    
+    print(f"Processing experiment {experiment_id}")
     results_for_experiment = {}
     stocks = experiment["stocks"]
     start = experiment["start"]
@@ -28,7 +60,7 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     n_layers = 1
     max_qubits = 15
     budget = experiment["budget"]
-    print(budget)
+    print(f"Budget: {budget}")
 
     data = yf.download(stocks, start=start, end=end)
     prices_now = data["Close"].iloc[-1]
@@ -37,23 +69,23 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     stocks = returns.columns
 
     numpy_returns = returns.to_numpy()
-    expected_returns = returns.add(1).prod() ** (252 / len(returns)) #mean(axis=0)**(252/len(returns))
+    expected_returns = returns.add(1).prod() ** (252 / len(returns))
     expected_returns = expected_returns.to_numpy()
     covariance_matrix = np.cov(numpy_returns, rowvar=False)*(252/len(returns))
-    coskewness_tensor = coskewness(numpy_returns)#*(252**2)
-    cokurtosis_tensor = cokurtosis(numpy_returns)#*(252**3)
+    coskewness_tensor = coskewness(numpy_returns)
+    cokurtosis_tensor = cokurtosis(numpy_returns)
 
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,
                                             expected_returns=expected_returns, 
                                             covariance_matrix=covariance_matrix,
                                             budget=budget,
-                                            max_qubits = max_qubits,
+                                            max_qubits=max_qubits,
                                             coskewness_tensor=coskewness_tensor, 
                                             cokurtosis_tensor=cokurtosis_tensor,
-                                            log_encoding = True, 
-                                            layers = n_layers,
-                                            risk_aversion = risk_aversion)
+                                            log_encoding=True, 
+                                            layers=n_layers,
+                                            risk_aversion=risk_aversion)
     
     assets_to_qubits = portfolio_hubo.get_assets_to_qubits()
     
@@ -102,7 +134,7 @@ for i, experiment in enumerate(experiments[init_experiment:]):
         training_history,
         objective_values,
         result1
-    ) = portfolio_hubo.solve_with_qaoa_cma_es() #solve_with_qaoa_jax()
+    ) = portfolio_hubo.solve_with_qaoa_cma_es()
 
     qaoa_solution = {
         "two_most_probable_states": two_most_probable_states,
@@ -119,7 +151,7 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     for key, value in qaoa_solution.items():
         if key != "training_history":
             print(f"{key}: {value}")
-
+ 
     n_qubits = portfolio_hubo.get_n_qubits()
     n_layers = portfolio_hubo.get_layers()
     hyperparams = {
@@ -140,15 +172,11 @@ for i, experiment in enumerate(experiments[init_experiment:]):
     results_for_experiment["exact_solution"] = exact_solution
     results_for_experiment["qaoa_solution"] = qaoa_solution
 
-    # Load existing data if file exists
-    if os.path.exists(output_file):
-        with open(output_file, 'r') as f:
-            existing_results = json.load(f)
-    else:
-        existing_results = {}
+    # Add to existing_results
+    existing_results[str(experiment_id)] = results_for_experiment
 
-    existing_results[i + init_experiment] = results_for_experiment
-
-    # Write the updated results back to the file
+    # Write updated results to file after each experiment (to avoid losing progress)
     with open(output_file, 'w') as f:
         json.dump(existing_results, f, indent=4)
+
+print(f"Batch {args.batch_num+1}/{args.total_batches} completed. Results saved to {output_file}")
