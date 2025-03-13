@@ -25,6 +25,9 @@ with open("experiments_data.json", "r") as f:
 
 output_file = f"portfolio_optimization_results_batch_{args.batch_num}.json"
 
+# Find files with portfolio_optimization_results_batch_ in the name
+previous_output_files = [f for f in os.listdir() if "portfolio_optimization_results_batch_" in f]
+
 # Calculate which experiments to process in this batch
 total_experiments = len(experiments)
 batch_size = total_experiments // args.total_batches
@@ -37,6 +40,12 @@ end_idx = start_idx + batch_size + (1 if args.batch_num < remainder else 0)
 print(f"Processing batch {args.batch_num+1}/{args.total_batches}: experiments {start_idx} to {end_idx-1} (total {end_idx-start_idx})")
 
 # Load existing results if file exists
+all_existing_results = {}
+for file in previous_output_files:
+    if os.path.exists(file):
+        with open(file, 'r') as f:
+            all_existing_results.update(json.load(f))
+
 existing_results = {}
 if os.path.exists(output_file):
     with open(output_file, 'r') as f:
@@ -47,7 +56,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     experiment_id = start_idx + i
     
     # Skip if already processed
-    if str(experiment_id) in existing_results:
+    if str(experiment_id) in all_existing_results:
         print(f"Skipping experiment {experiment_id} (already processed)")
         continue
     
