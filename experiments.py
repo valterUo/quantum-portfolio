@@ -66,7 +66,6 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     start = experiment["start"]
     end = experiment["end"]
     risk_aversion = 0.1
-    n_layers = 1
     max_qubits = 15
     budget = experiment["budget"]
     print(f"Budget: {budget}")
@@ -92,8 +91,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
                                             max_qubits=max_qubits,
                                             coskewness_tensor=coskewness_tensor, 
                                             cokurtosis_tensor=cokurtosis_tensor,
-                                            log_encoding=True, 
-                                            layers=n_layers,
+                                            log_encoding=True,
                                             risk_aversion=risk_aversion)
     
     assets_to_qubits = portfolio_hubo.get_assets_to_qubits()
