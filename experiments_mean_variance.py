@@ -1,7 +1,6 @@
 import json
 import numpy as np
 import yfinance as yf
-from coskweness_cokurtosis import coskewness, cokurtosis
 from portfolio_hubo_qaoa_light import HigherOrderPortfolioQAOA
 import os
 import sys
@@ -23,10 +22,10 @@ experiments = None
 with open("experiments_data.json", "r") as f:
     experiments = list(json.load(f)["data"])
 
-output_file = f"portfolio_optimization_results_batch_{args.batch_num}.json"
+output_file = f"portfolio_opt_mean_variance_results_batch_{args.batch_num}.json"
 
 # Find files with portfolio_optimization_results_batch_ in the name
-previous_output_files = [f for f in os.listdir() if "portfolio_optimization_results_batch_" in f]
+previous_output_files = [f for f in os.listdir() if "portfolio_opt_mean_variance_results_batch_" in f]
 
 # Calculate which experiments to process in this batch
 total_experiments = len(experiments)
@@ -65,7 +64,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     stocks = experiment["stocks"]
     start = experiment["start"]
     end = experiment["end"]
-    risk_aversion = 3
+    risk_aversion = 0.1
     max_qubits = 15
     budget = experiment["budget"]
     print(f"Budget: {budget}")
@@ -77,20 +76,10 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     stocks = returns.columns
 
     numpy_returns = returns.to_numpy()
-    #expected_returns = returns.add(1).prod() ** (252 / len(returns)) - 1
-    #expected_returns = expected_returns.to_numpy()
     expected_returns = numpy_returns.mean(axis=0) * 252
 
     #covariance_matrix = np.cov(numpy_returns, rowvar=False)*(252/len(returns))
     covariance_matrix = np.corrcoef(numpy_returns, rowvar=False)
-    coskewness_tensor = coskewness(numpy_returns)
-    cokurtosis_tensor = cokurtosis(numpy_returns)
-
-    # Print example value from each moment
-    print(f"Expected returns: {expected_returns[0]}")
-    print(f"Covariance matrix: {covariance_matrix[0][1]}")
-    print(f"3rd-order coskewness tensor: {coskewness_tensor[0][0][0]}")
-    print(f"4th-order cokurtosis tensor: {cokurtosis_tensor[0][0][0][0]}")
 
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,
@@ -98,8 +87,6 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
                                             covariance_matrix=covariance_matrix,
                                             budget=budget,
                                             max_qubits=max_qubits,
-                                            coskewness_tensor=coskewness_tensor, 
-                                            cokurtosis_tensor=cokurtosis_tensor,
                                             log_encoding=True,
                                             risk_aversion=risk_aversion)
     

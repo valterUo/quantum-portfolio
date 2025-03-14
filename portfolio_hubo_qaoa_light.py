@@ -3,9 +3,10 @@ import cma
 import pennylane as qml
 from pennylane import numpy as np
 from pypfopt import EfficientFrontier
+from pypfopt.discrete_allocation import DiscreteAllocation
 
 from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
-from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, smallest_eigenpairs, smallest_sparse_eigenpairs
+from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, replace_h_rz_h_with_rx, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)
 
@@ -76,6 +77,7 @@ class HigherOrderPortfolioQAOA:
         
         self.n_qubits = self.total_qubits
         self.layers = self.n_qubits if layers == None else layers
+        self.layers = min(10, self.layers)
         print("Total number of qubits: ", self.n_qubits)
         assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
 
@@ -84,7 +86,7 @@ class HigherOrderPortfolioQAOA:
         #print("Constructing cost hubo with integer variables")
         self.construct_cost_hubo_int()
 
-        scaler = sum([abs(v) for v in self.cost_hubo_int.values()])
+        scaler = 1 #sum([abs(v) for v in self.cost_hubo_int.values()])
                 
         self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
         #print("Adding budget constraints to the cost function -> constructing full hubo problem")
@@ -132,7 +134,7 @@ class HigherOrderPortfolioQAOA:
                 for j in range(self.num_assets):
                     for k in range(self.num_assets):
                         for l in range(self.num_assets):
-                            kurt = (self.risk_aversion/24)*self.cokurtosis_tensor[i][j][k][l]
+                            kurt = (self.risk_aversion/24)*self.risk_aversion*self.cokurtosis_tensor[i][j][k][l]
                             self.cost_hubo_int[(self.stocks[i], self.stocks[j], self.stocks[k], self.stocks[l])] = kurt
 
 
@@ -227,65 +229,40 @@ class HigherOrderPortfolioQAOA:
             bin_var = list(bin_var_set)
             coeff = self.cost_hubo_bin_simplified[bin_var_set]
             if len(bin_var) == 1:
+
                 qubit0 = bin_var[0][1]
                 self.hamiltonian += (coeff/2)*(qml.Identity(qubit0) - qml.PauliZ(qubit0))
+
             elif len(bin_var) == 2:
+
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
                 self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1))
-                #self.hamiltonian += (coeff/4)*(qml.Identity(qubit0) @ qml.Identity(qubit1)\
-                #                                - qml.Identity(qubit0) @ qml.PauliZ(qubit1)\
-                #                                - qml.PauliZ(qubit0) @ qml.Identity(qubit1)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1))
+
             elif len(bin_var) == 3:
+
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
                 qubit2 = bin_var[2][1]
                 
                 self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2))
                 
-                # Multiply the previous line open to speedup pennylane
-                #self.hamiltonian += (coeff/8)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
-                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2))
-                
             elif len(bin_var) == 4:
+
                 qubit0 = bin_var[0][1]
                 qubit1 = bin_var[1][1]
                 qubit2 = bin_var[2][1]
                 qubit3 = bin_var[3][1]
                 
                 self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) - qml.PauliZ(qubit0)) @ (qml.Identity(qubit1) - qml.PauliZ(qubit1)) @ (qml.Identity(qubit2) - qml.PauliZ(qubit2)) @ (qml.Identity(qubit3) - qml.PauliZ(qubit3))
+
+                #print("Hamiltonian: ", self.hamiltonian)
                 
-                # Multiply the previous line open manually, somehow speedsup the process
-                #self.hamiltonian += (coeff/16)*(qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.Identity(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.Identity(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.Identity(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.Identity(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3)\
-                #                                + qml.PauliZ(qubit0) @ qml.PauliZ(qubit1) @ qml.PauliZ(qubit2) @ qml.PauliZ(qubit3))
-            
 
     def get_QAOA_circuits(self):
         dev = qml.device('default.qubit', wires=self.n_qubits)
         
         cost_hamiltonian = self.get_cost_hamiltonian()
-        #complete_graph = nx.complete_graph(self.n_qubits)
         mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits)) #qml.qaoa.xy_mixer(complete_graph)
 
         def qaoa_layer(gamma, alpha):
@@ -305,17 +282,22 @@ class HigherOrderPortfolioQAOA:
                 qml.Hadamard(wires=wire)
             qml.layer(qaoa_layer, self.layers, params[0], params[1])
             return qml.probs()
-        
+
+        return qaoa_circuit, qaoa_probs_circuit
+    
+
+    def get_compiled_QAOA_circuits(self):
         # Compile the QAOA circuit to some specific gate set
         # It seems that Pennylane compiler is too eager to decompose, 
         # since it unnecessarily applies the rule RX = H RZ H
-        #allowed_gates = ["CNOT", "RZ", "RX", "Hadamard"]
-        #dispatched_transform = qml.transform(replace_h_rz_h_with_rx)
-        #qaoa_circuit = compile(qaoa_circuit, basis_set = allowed_gates)
-        #qaoa_circuit = compile(qaoa_circuit, pipeline = [dispatched_transform])
+        qaoa_circuit, qaoa_probs_circuit = self.get_QAOA_circuits()
+        allowed_gates = ["CNOT", "RZ", "RX", "Hadamard"]
+        dispatched_transform = qml.transform(replace_h_rz_h_with_rx)
+        qaoa_circuit = compile(qaoa_circuit, basis_set = allowed_gates)
+        qaoa_circuit = compile(qaoa_circuit, pipeline = [dispatched_transform])
 
-        #qaoa_probs_circuit = compile(qaoa_probs_circuit, basis_set = allowed_gates)
-        #qaoa_probs_circuit = compile(qaoa_probs_circuit, pipeline = [dispatched_transform])
+        qaoa_probs_circuit = compile(qaoa_probs_circuit, basis_set = allowed_gates)
+        qaoa_probs_circuit = compile(qaoa_probs_circuit, pipeline = [dispatched_transform])
 
         return qaoa_circuit, qaoa_probs_circuit
     
@@ -332,21 +314,12 @@ class HigherOrderPortfolioQAOA:
 
             #print("Optimized Weights (considering variance and returns):")
             for asset, weight in weights.items():
-                print(f"{asset}: {weight:.2%}")
+                print(f"{self.stocks[asset]}: {weight:.2%}")
 
-            numpy_weights = np.array(list(weights.values()))
-
-            # Get utility with optimized weights
-            maximized_utility = -0.5 * self.risk_aversion * numpy_weights.T @ self.covariance_matrix @ numpy_weights \
-                            + self.expected_returns @ numpy_weights
-            print("Maximized utility from continuous mean variance: ", maximized_utility)
-
-            allocation, left_overs = ef.get_discrete_allocation(self.prices_now, self.budget)
+            #allocation, left_overs = ef.get_discrete_allocation(self.prices_now, self.budget)
+            allocator = DiscreteAllocation(weights, self.prices_now, self.budget)
+            allocation, left_overs = allocator.lp_portfolio()
             print("Left over budget: ", left_overs)
-
-            allocation = {}
-            for asset, weight in weights.items():
-                allocation[asset] = int(np.floor(weight*self.budget/self.prices_now[asset]))
             
             print("Optimized Discrete Allocation:")
             for asset, amount in allocation.items():
@@ -354,6 +327,8 @@ class HigherOrderPortfolioQAOA:
 
             value = self.get_objective_value(allocation)
             print("Maximized utility from continuous mean variance: ", value)
+
+            weights = {self.stocks[asset]: weight for asset, weight in weights.items()}
 
             return weights, allocation, value, left_overs
 
@@ -527,7 +502,7 @@ class HigherOrderPortfolioQAOA:
         # Make initial params 1-D array
         initial_params = np.concatenate((initial_params[0], initial_params[1]))
         print("Initial params: ", initial_params)
-        es = cma.CMAEvolutionStrategy(initial_params, sigma0=0.1)
+        es = cma.CMAEvolutionStrategy(initial_params, sigma0=1.5, options={"maxiter": 1000})
         result = es.optimize(objective_function)
         optimized_params = result.result.xbest
         final_expectation_value = qaoa_circuit(optimized_params)
