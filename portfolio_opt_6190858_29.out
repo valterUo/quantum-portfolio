@@ -1,0 +1,38 @@
+Running job array 29 on pe62.int.triton.aalto.fi
+Starting at Sat Mar 15 11:22:31 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 30/30: experiments 431 to 444 (total 14)
+Processing experiment 431
+Budget: 246.9599952697754
+YF.download() has changed argument auto_adjust default to True
+Expected returns: -0.008296532363834132
+Covariance matrix: 0.32059064031319806
+3rd-order coskewness tensor: 0.248349709777063
+4th-order cokurtosis tensor: 12.511765329628066
+Number of qubits for asset BA: 1
+Number of qubits for asset CRM: 1
+Number of qubits for asset DOW: 3
+Number of qubits for asset GS: 1
+Number of qubits for asset HD: 1
+Number of qubits for asset INTC: 4
+Number of qubits for asset JPM: 1
+Number of qubits for asset KO: 2
+Number of qubits for asset V: 1
+Total number of qubits:  15
+Optimized Weights (considering variance, skewness and kurtosis):
+BA: 1.93%
+CRM: 35.62%
+DOW: 3.27%
+GS: 10.49%
+HD: 0.00%
+INTC: 20.23%
+JPM: 4.51%
+KO: 23.96%
+V: 0.00%
+Left over budget:  6.8089751223593
+Optimized Discrete Allocation:
+DOW: 3
+INTC: 3
+KO: 1
+Maximized utility from continuous higher moments:  -1124.0101286259294
+Job finished at Sat Mar 15 11:24:19 EET 2025
