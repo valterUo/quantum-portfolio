@@ -1,0 +1,8 @@
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/cma/s.py:15: UserWarning: Could not import matplotlib.pyplot, therefore ``cma.plot()`` etc. is not available
+  _warnings.warn('Could not import matplotlib.pyplot, therefore'
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+[                       0%                       ][**********************50%                       ]  2 of 4 completed[**********************75%***********            ]  3 of 4 completed[*********************100%***********************]  4 of 4 completed
+[                       0%                       ][**********************50%                       ]  2 of 4 completed[**********************75%***********            ]  3 of 4 completed[*********************100%***********************]  4 of 4 completed
+[                       0%                       ][**********************50%                       ]  2 of 4 completed[**********************75%***********            ]  3 of 4 completed[*********************100%***********************]  4 of 4 completed
+slurmstepd: error: *** JOB 6220966 ON pe65 CANCELLED AT 2025-03-17T11:25:44 DUE TO TIME LIMIT ***

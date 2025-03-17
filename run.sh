@@ -5,7 +5,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --mem=1500MB
 #SBATCH --cpus-per-task=1
-#SBATCH --array=0-29
+#SBATCH --array=0-39
 
 echo "Running job array ${SLURM_ARRAY_TASK_ID} on $(hostname)"
 echo "Starting at $(date)"
@@ -28,7 +28,7 @@ else
 fi
 
 # Set total number of batches
-TOTAL_BATCHES=30
+TOTAL_BATCHES=40
 
 # Run the script
 python experiments.py ${SLURM_ARRAY_TASK_ID} ${TOTAL_BATCHES}
