@@ -1,0 +1,15 @@
+Running job array 4 on csl43.int.triton.aalto.fi
+Starting at Mon Mar 17 13:00:01 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 5/50: experiments 36 to 44 (total 9)
+Skipping experiment 36 (already processed)
+Skipping experiment 37 (already processed)
+Skipping experiment 38 (already processed)
+Skipping experiment 39 (already processed)
+Skipping experiment 40 (already processed)
+Skipping experiment 41 (already processed)
+Skipping experiment 42 (already processed)
+Skipping experiment 43 (already processed)
+Skipping experiment 44 (already processed)
+Batch 5/50 completed. Results saved to portfolio_optimization_results_batch_4.json
+Job finished at Mon Mar 17 13:00:19 EET 2025
