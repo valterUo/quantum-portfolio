@@ -1,11 +1,12 @@
 import json
-import numpy as np
 import yfinance as yf
 from coskweness_cokurtosis import coskewness, cokurtosis
 from portfolio_hubo_qaoa_light import HigherOrderPortfolioQAOA
 import os
 import sys
 import argparse
+from pypfopt.expected_returns import mean_historical_return
+from pypfopt.risk_models import sample_cov
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Run portfolio optimization experiments in batches')
@@ -72,25 +73,21 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
 
     data = yf.download(stocks, start=start, end=end)
     prices_now = data["Close"].iloc[-1]
-        
-    returns = data["Close"].pct_change().dropna()
+    print(prices_now)
+    returns = data["Close"].pct_change(fill_method=None).dropna(how="all")
     stocks = returns.columns
-
     numpy_returns = returns.to_numpy()
-    #expected_returns = returns.add(1).prod() ** (252 / len(returns)) - 1
-    #expected_returns = expected_returns.to_numpy()
-    expected_returns = numpy_returns.mean(axis=0) * 252
 
-    #covariance_matrix = np.cov(numpy_returns, rowvar=False)*(252/len(returns))
-    covariance_matrix = np.corrcoef(numpy_returns, rowvar=False)
+    expected_returns = mean_historical_return(data["Close"]).to_numpy()
+    covariance_matrix = sample_cov(data["Close"]).to_numpy()
     coskewness_tensor = coskewness(numpy_returns)
     cokurtosis_tensor = cokurtosis(numpy_returns)
 
     # Print example value from each moment
-    print(f"Expected returns: {expected_returns[0]}")
-    print(f"Covariance matrix: {covariance_matrix[0][1]}")
-    print(f"3rd-order coskewness tensor: {coskewness_tensor[0][0][0]}")
-    print(f"4th-order cokurtosis tensor: {cokurtosis_tensor[0][0][0][0]}")
+    #print(f"Expected returns: {expected_returns[0]}")
+    #print(f"Covariance matrix: {covariance_matrix[0][1]}")
+    #print(f"3rd-order coskewness tensor: {coskewness_tensor[0][0][0]}")
+    #print(f"4th-order cokurtosis tensor: {cokurtosis_tensor[0][0][0][0]}")
 
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,

@@ -10,6 +10,41 @@ from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios,
 
 np.random.seed(0)
 
+def extract_from_latex(latex_source):
+        """
+        Extract characters from each line starting with '\nghost' up to the tenth '&' character.
+        
+        Args:
+            latex_source (str): The LaTeX source code
+            
+        Returns:
+            list: Lines extracted according to the specified rule
+        """
+        depth = 100
+        extracted_lines = []
+        
+        # Split the latex source into lines
+        lines = latex_source.split('\n')
+        
+        # Process each line
+        for line in lines:
+            if line.strip().startswith('\\nghost'):
+                # Count the occurrences of '&'
+                amp_positions = [pos for pos, char in enumerate(line) if char == '&']
+                
+                # Check if there are at least 10 '&' characters
+                if len(amp_positions) >= depth:
+                    # Extract up to the 10th '&'
+                    extracted_portion = line[:amp_positions[depth - 1]]
+                    extracted_lines.append(extracted_portion + '\\\ \n')
+                else:
+                    # If fewer than 10 '&' characters, take the whole line
+                    extracted_lines.append(line)
+            else:
+                extracted_lines.append(line + '\n')
+        
+        return extracted_lines
+
 class HigherOrderPortfolioQAOA:
 
     def __init__(self, 
@@ -305,6 +340,73 @@ class HigherOrderPortfolioQAOA:
     def draw_qaoa_circuit(self):
         fig, ax = qml.draw_mpl(self.qaoa_circuit, expansion_strategy="device", decimals=2)(self.init_params)
         fig.savefig("qaoa_circuit.png")
+
+
+    def get_latex_qaoa_circuit(self):
+        dev = qml.device("qiskit.aer", wires=self.n_qubits)
+        
+        cost_hamiltonian = self.get_cost_hamiltonian()
+
+        # Iterate over cost hamiltonian anc pick some elements
+        coeffs, obs = cost_hamiltonian.coeffs, cost_hamiltonian.ops
+        print("Coeffs: ", len(coeffs))
+        print("Obs: ", obs)
+        new_coeffs = [[], [], [], []]
+        new_obs = [[], [], [], []]
+        added_lengths = []
+
+        #while len(new_coeffs) < 8:
+        for coeff, op in zip(coeffs, obs):
+            print("Length of op: ", len(op.wires))
+            if len(op.wires) == 1 and len([v for v in added_lengths if v == 1]) < 2:
+                new_coeffs[0].append(coeff)
+                new_obs[0].append(op)
+                added_lengths.append(1)
+            elif len(op.wires) == 2 and len([v for v in added_lengths if v == 2]) < 2:
+                new_coeffs[1].append(coeff)
+                new_obs[1].append(op)
+                added_lengths.append(2)
+            elif len(op.wires) == 3 and len([v for v in added_lengths if v == 3]) < 2:
+                new_coeffs[2].append(coeff)
+                new_obs[2].append(op)
+                added_lengths.append(3)
+            elif len(op.wires) == 4 and len([v for v in added_lengths if v == 4]) < 2:
+                new_coeffs[3].append(coeff)
+                new_obs[3].append(op)
+                added_lengths.append(4)
+        print("New coeffs: ", new_coeffs)
+        print("New obs: ", new_obs)
+
+        # Flatten the lists
+        new_coeffs = [item for sublist in new_coeffs for item in sublist]
+        new_obs = [item for sublist in new_obs for item in sublist]
+
+        cost_hamiltonian = qml.ops.op_math.LinearCombination(new_coeffs, new_obs)
+
+        mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits)) #qml.qaoa.xy_mixer(complete_graph)
+
+        def qaoa_layer(gamma, alpha):
+            qml.qaoa.cost_layer(gamma, cost_hamiltonian)
+            #qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
+        
+        @qml.qnode(dev)
+        def qaoa_circuit(params):
+            for wire in range(self.n_qubits):
+                qml.Hadamard(wires=wire)
+            qml.layer(qaoa_layer, 1, params[0], params[1])
+            return qml.expval(cost_hamiltonian)
+        
+        #allowed_gates = ["CNOT", "RZ", "RX", "Hadamard"]
+        #dispatched_transform = qml.transform(replace_h_rz_h_with_rx)
+        #qaoa_circuit = qml.compile(qaoa_circuit, basis_set = allowed_gates)
+        #qaoa_circuit = qml.compile(qaoa_circuit, pipeline = [dispatched_transform])
+        qaoa_circuit(np.pi*np.random.rand(2, 1))
+
+        latex = dev._circuit.draw(output="latex_source")
+
+        #extracted_parts = extract_from_latex(latex)
+
+        return latex #"".join(extracted_parts)
 
     
     def solve_with_continuous_variables(self):
