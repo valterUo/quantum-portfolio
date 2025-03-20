@@ -1,13 +1,0 @@
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/cma/s.py:15: UserWarning: Could not import matplotlib.pyplot, therefore ``cma.plot()`` etc. is not available
-  _warnings.warn('Could not import matplotlib.pyplot, therefore'
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
-  backends.update(_get_backends("networkx.backends"))
-[                       0%                       ][****************      33%                       ]  2 of 6 completed[**********************50%                       ]  3 of 6 completed[**********************67%*******                ]  4 of 6 completed[**********************83%***************        ]  5 of 6 completed[*********************100%***********************]  6 of 6 completed
-[                       0%                       ][                       0%                       ][**********************50%                       ]  3 of 6 completed[**********************67%*******                ]  4 of 6 completed[**********************83%***************        ]  5 of 6 completed[*********************100%***********************]  6 of 6 completed
-[                       0%                       ][****************      33%                       ]  2 of 6 completed[**********************50%                       ]  3 of 6 completed[**********************67%*******                ]  4 of 6 completed[**********************83%***************        ]  5 of 6 completed[*********************100%***********************]  6 of 6 completed
-Traceback (most recent call last):
-  File "/scratch/work/uotilav2/quantum-portfolio/experiments.py", line 126, in <module>
-    ) = portfolio_hubo.solve_exactly()
-  File "/scratch/work/uotilav2/quantum-portfolio/portfolio_hubo_qaoa_light.py", line 371, in solve_exactly
-    self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, first_excited_state, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
-ValueError: not enough values to unpack (expected 5, got 3)
