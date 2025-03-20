@@ -66,22 +66,26 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     stocks = experiment["stocks"]
     start = experiment["start"]
     end = experiment["end"]
-    risk_aversion = 3
+    risk_aversion = 0.1
     max_qubits = 15
     budget = experiment["budget"]
     print(f"Budget: {budget}")
 
     data = yf.download(stocks, start=start, end=end)
     prices_now = data["Close"].iloc[-1]
-    print(prices_now)
-    returns = data["Close"].pct_change(fill_method=None).dropna(how="all")
+    returns = data["Close"].pct_change(fill_method=None).dropna(how="any")
     stocks = returns.columns
     numpy_returns = returns.to_numpy()
 
-    expected_returns = mean_historical_return(data["Close"]).to_numpy()
-    covariance_matrix = sample_cov(data["Close"]).to_numpy()
+    expected_returns = mean_historical_return(returns, returns_data=True).to_numpy()
+    covariance_matrix = sample_cov(returns, returns_data=True).to_numpy()
     coskewness_tensor = coskewness(numpy_returns)
     cokurtosis_tensor = cokurtosis(numpy_returns)
+
+    #print(f"Expected returns: {expected_returns}")
+    #print(f"Covariance matrix: {covariance_matrix}")
+    #print(f"3rd-order coskewness tensor: {coskewness_tensor}")
+    #print(f"4th-order cokurtosis tensor: {cokurtosis_tensor}")
 
     # Print example value from each moment
     #print(f"Expected returns: {expected_returns[0]}")
