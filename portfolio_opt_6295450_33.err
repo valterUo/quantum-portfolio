@@ -1,0 +1,7 @@
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/cma/s.py:15: UserWarning: Could not import matplotlib.pyplot, therefore ``cma.plot()`` etc. is not available
+  _warnings.warn('Could not import matplotlib.pyplot, therefore'
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+[                       0%                       ][**************        29%                       ]  2 of 7 completed[********************* 43%                       ]  3 of 7 completed[**********************57%**                     ]  4 of 7 completed[**********************71%*********              ]  5 of 7 completed[**********************86%****************       ]  6 of 7 completed[*********************100%***********************]  7 of 7 completed
+/var/spool/slurmd/job6295484/slurm_script: line 34: 1848711 Killed                  python experiments.py ${SLURM_ARRAY_TASK_ID} ${TOTAL_BATCHES}
+slurmstepd: error: Detected 1 oom_kill event in StepId=6295484.batch. Some of the step tasks have been OOM Killed.
