@@ -98,6 +98,13 @@ def smallest_sparse_eigenpairs(A):
         smallest_eigenvalues.append(eigenvalues[1])
         smallest_eigenvectors.append(eigenvectors[:, 1])
     
+    # For each eigenvector make the largest element to be one and others to be zero
+    for i in range(len(smallest_eigenvectors)):
+        smallest_eigenvectors_new = np.zeros_like(smallest_eigenvectors[i])
+        index = np.argmax(smallest_eigenvectors[i])
+        smallest_eigenvectors_new[index] = 1.0
+        smallest_eigenvectors[i] = np.array([int(i) for i in smallest_eigenvectors_new])
+    
     return smallest_eigenvalues, smallest_eigenvectors, eigenvalues
 
 

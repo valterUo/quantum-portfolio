@@ -374,20 +374,14 @@ class HigherOrderPortfolioQAOA:
                 new_coeffs[3].append(coeff)
                 new_obs[3].append(op)
                 added_lengths.append(4)
-        print("New coeffs: ", new_coeffs)
-        print("New obs: ", new_obs)
 
-        # Flatten the lists
         new_coeffs = [item for sublist in new_coeffs for item in sublist]
         new_obs = [item for sublist in new_obs for item in sublist]
 
         cost_hamiltonian = qml.ops.op_math.LinearCombination(new_coeffs, new_obs)
 
-        mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits)) #qml.qaoa.xy_mixer(complete_graph)
-
         def qaoa_layer(gamma, alpha):
             qml.qaoa.cost_layer(gamma, cost_hamiltonian)
-            #qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
         
         @qml.qnode(dev)
         def qaoa_circuit(params):
@@ -396,17 +390,11 @@ class HigherOrderPortfolioQAOA:
             qml.layer(qaoa_layer, 1, params[0], params[1])
             return qml.expval(cost_hamiltonian)
         
-        #allowed_gates = ["CNOT", "RZ", "RX", "Hadamard"]
-        #dispatched_transform = qml.transform(replace_h_rz_h_with_rx)
-        #qaoa_circuit = qml.compile(qaoa_circuit, basis_set = allowed_gates)
-        #qaoa_circuit = qml.compile(qaoa_circuit, pipeline = [dispatched_transform])
         qaoa_circuit(np.pi*np.random.rand(2, 1))
 
         latex = dev._circuit.draw(output="latex_source")
 
-        #extracted_parts = extract_from_latex(latex)
-
-        return latex #"".join(extracted_parts)
+        return latex
 
     
     def solve_with_continuous_variables(self):
@@ -470,24 +458,27 @@ class HigherOrderPortfolioQAOA:
             self.smallest_eigenvalues, self.smallest_eigenvectors, first_excited_energy, first_excited_state, eigenvalues = smallest_eigenpairs(cost_matrix)
         else:
             cost_matrix = self.get_cost_hamiltonian().sparse_matrix(wire_order=range(self.n_qubits))
-            self.smallest_eigenvalues, self.smallest_bitstrings, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
+            self.smallest_eigenvalues, self.smallest_eigenvectors, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
+            first_excited_energy = None
+            first_excited_state = None
         
         self.smallest_bitstrings = [basis_vector_to_bitstring(v) for v in self.smallest_eigenvectors]
-        second_smallest_bitstrings = [basis_vector_to_bitstring(first_excited_state)]
         optimized_portfolio = bitstrings_to_optimized_portfolios(self.smallest_bitstrings, self.assets_to_qubits)
-        second_optimized_portfolio = bitstrings_to_optimized_portfolios(second_smallest_bitstrings, self.assets_to_qubits)
-        
         result1 = self.satisfy_budget_constraint(optimized_portfolio)
-        result2 = self.satisfy_budget_constraint(second_optimized_portfolio)
         eigenvalues = [float(v) for v in eigenvalues]
-
         objective_values = [float(self.get_objective_value(allocation)) for allocation in optimized_portfolio]
         for i, r in enumerate(result1):
             r["objective_value"] = objective_values[i]
-
-        objective_values = [float(self.get_objective_value(allocation)) for allocation in second_optimized_portfolio]
-        for i, r in enumerate(result2):
-            r["objective_value"] = objective_values[i]
+        
+        second_optimized_portfolio = None
+        result2 = None
+        if first_excited_state is not None:
+            second_smallest_bitstrings = [basis_vector_to_bitstring(first_excited_state)]
+            second_optimized_portfolio = bitstrings_to_optimized_portfolios(second_smallest_bitstrings, self.assets_to_qubits)
+            result2 = self.satisfy_budget_constraint(second_optimized_portfolio)
+            objective_values = [float(self.get_objective_value(allocation)) for allocation in second_optimized_portfolio]
+            for i, r in enumerate(result2):
+                r["objective_value"] = objective_values[i]
         
         return self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, optimized_portfolio, second_optimized_portfolio, eigenvalues, result1, result2
 
