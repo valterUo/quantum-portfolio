@@ -470,7 +470,7 @@ class HigherOrderPortfolioQAOA:
             self.smallest_eigenvalues, self.smallest_eigenvectors, first_excited_energy, first_excited_state, eigenvalues = smallest_eigenpairs(cost_matrix)
         else:
             cost_matrix = self.get_cost_hamiltonian().sparse_matrix(wire_order=range(self.n_qubits))
-            self.smallest_eigenvalues, self.smallest_bitstrings, first_excited_energy, first_excited_state, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
+            self.smallest_eigenvalues, self.smallest_bitstrings, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
         
         self.smallest_bitstrings = [basis_vector_to_bitstring(v) for v in self.smallest_eigenvectors]
         second_smallest_bitstrings = [basis_vector_to_bitstring(first_excited_state)]

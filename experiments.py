@@ -82,17 +82,6 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     coskewness_tensor = coskewness(numpy_returns)
     cokurtosis_tensor = cokurtosis(numpy_returns)
 
-    #print(f"Expected returns: {expected_returns}")
-    #print(f"Covariance matrix: {covariance_matrix}")
-    #print(f"3rd-order coskewness tensor: {coskewness_tensor}")
-    #print(f"4th-order cokurtosis tensor: {cokurtosis_tensor}")
-
-    # Print example value from each moment
-    #print(f"Expected returns: {expected_returns[0]}")
-    #print(f"Covariance matrix: {covariance_matrix[0][1]}")
-    #print(f"3rd-order coskewness tensor: {coskewness_tensor[0][0][0]}")
-    #print(f"4th-order cokurtosis tensor: {cokurtosis_tensor[0][0][0][0]}")
-
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,
                                             expected_returns=expected_returns, 
