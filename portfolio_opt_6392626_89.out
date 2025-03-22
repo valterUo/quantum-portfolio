@@ -1,0 +1,53 @@
+Running job array 89 on pe82.int.triton.aalto.fi
+Starting at Sat Mar 22 09:29:00 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 90/100: experiments 89 to 89 (total 1)
+Processing experiment 89
+Budget: 707
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset CRM: 2
+Number of qubits for asset HD: 1
+Number of qubits for asset MMM: 3
+Number of qubits for asset MRK: 3
+Number of qubits for asset MSFT: 1
+Number of qubits for asset NKE: 4
+Total number of qubits:  14
+Optimized Weights (considering variance, skewness and kurtosis):
+CRM: 0.00%
+HD: 0.00%
+MMM: 0.00%
+MRK: 0.00%
+MSFT: 100.00%
+NKE: 0.00%
+Left over budget:  112.42658967493924
+Optimized Discrete Allocation:
+MRK: 1
+MSFT: 1
+NKE: 1
+Maximized utility from continuous higher moments:  0.029808530519656207
+Budget constraint satisfied 705.5027770996094 707 Difference:  1.497222900390625
+smallest_eigenvalues: [-0.03542694406585486]
+smallest_bitstrings: ['10000011001000']
+first_excited_energy: None
+optimized_portfolio: [{'CRM': 1, 'HD': 0, 'MMM': 0, 'MRK': 3, 'MSFT': 0, 'NKE': 1}]
+second_optimized_portfolio: None
+result_with_budget: [{'portfolio': {'CRM': 1, 'HD': 0, 'MMM': 0, 'MRK': 3, 'MSFT': 0, 'NKE': 1}, 'budget': 705.5027770996094, 'difference': 1.497222900390625, 'objective_value': -1.5796316226621525}]
+result_with_budget_excited: None
+Initial params:  [2.51063067 1.44978017 2.45210473 0.37157007 2.01037118 0.45035763
+ 2.96776493 1.63943485 1.3026989  0.83112597 2.43232687 1.43303853
+ 1.78578792 0.0590299  1.94035914 1.92295543 1.93815531 2.96487203
+ 2.14200164 1.12942738]
+(6_w,12)-aCMA-ES (mu_w=3.7,w_1=40%) in dimension 20 (seed=734618, Sat Mar 22 09:39:36 2025)
+Iterat #Fevals   function value  axis ratio  sigma  min&max std  t[m:s]
+    1     12 6.235970420901164e-03 1.0e+00 9.62e-02  9e-02  1e-01 2:20.4
+    2     24 2.731568291579902e-03 1.1e+00 9.77e-02  1e-01  1e-01 4:41.4
+    3     36 -3.177988749533760e-04 1.2e+00 9.82e-02  1e-01  1e-01 7:02.6
+    4     48 -3.485819615981720e-03 1.2e+00 9.99e-02  1e-01  1e-01 9:23.6
+    5     60 -1.101319068074892e-02 1.3e+00 1.01e-01  1e-01  1e-01 11:45.2
+    6     72 -1.107446213537563e-02 1.3e+00 1.02e-01  1e-01  1e-01 14:06.6
+    7     84 -1.630059735560354e-02 1.4e+00 1.02e-01  1e-01  1e-01 16:27.7
+    8     96 -1.527914946578477e-02 1.4e+00 1.07e-01  1e-01  1e-01 18:48.8
+    9    108 -1.731911744578598e-02 1.5e+00 1.14e-01  1e-01  1e-01 21:09.5
+   10    120 -1.677373632526815e-02 1.5e+00 1.22e-01  1e-01  1e-01 23:28.3
+   11    132 -2.138581061825518e-02 1.6e+00 1.28e-01  1e-01  1e-01 25:46.6
+   12    144 -2.219330712222472e-02 1.7e+00 1.29e-01  1e-01  1e-01 28:05.3

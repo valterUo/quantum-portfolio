@@ -1,0 +1,45 @@
+Running job array 83 on pe61.int.triton.aalto.fi
+Starting at Sat Mar 22 09:29:01 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 84/100: experiments 83 to 83 (total 1)
+Processing experiment 83
+Budget: 707
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset CRM: 2
+Number of qubits for asset HD: 1
+Number of qubits for asset MMM: 3
+Number of qubits for asset MRK: 3
+Number of qubits for asset MSFT: 1
+Number of qubits for asset NKE: 4
+Total number of qubits:  14
+Optimized Weights (considering variance, skewness and kurtosis):
+CRM: 0.00%
+HD: 0.00%
+MMM: 0.00%
+MRK: 0.00%
+MSFT: 100.00%
+NKE: 0.00%
+Left over budget:  112.42658967493912
+Optimized Discrete Allocation:
+MRK: 1
+MSFT: 1
+NKE: 1
+Maximized utility from continuous higher moments:  0.029806839950706
+Budget constraint satisfied 705.5027770996094 707 Difference:  1.497222900390625
+smallest_eigenvalues: [-0.03542694406252053]
+smallest_bitstrings: ['10000011001000']
+first_excited_energy: None
+optimized_portfolio: [{'CRM': 1, 'HD': 0, 'MMM': 0, 'MRK': 3, 'MSFT': 0, 'NKE': 1}]
+second_optimized_portfolio: None
+result_with_budget: [{'portfolio': {'CRM': 1, 'HD': 0, 'MMM': 0, 'MRK': 3, 'MSFT': 0, 'NKE': 1}, 'budget': 705.5027770996094, 'difference': 1.497222900390625, 'objective_value': -1.5796252736445136}]
+result_with_budget_excited: None
+Initial params:  [2.51063067 1.44978017 2.45210473 0.37157007 2.01037118 0.45035763
+ 2.96776493 1.63943485 1.3026989  0.83112597 2.43232687 1.43303853
+ 1.78578792 0.0590299  1.94035914 1.92295543 1.93815531 2.96487203
+ 2.14200164 1.12942738]
+(6_w,12)-aCMA-ES (mu_w=3.7,w_1=40%) in dimension 20 (seed=710007, Sat Mar 22 09:55:13 2025)
+Iterat #Fevals   function value  axis ratio  sigma  min&max std  t[m:s]
+    1     12 -2.947291680991257e-03 1.0e+00 9.41e-02  9e-02  1e-01 2:55.0
+    2     24 2.282126335022322e-03 1.1e+00 9.11e-02  9e-02  9e-02 5:49.7
+    3     36 -5.261972086491225e-03 1.1e+00 8.88e-02  9e-02  9e-02 8:40.7
+    4     48 -4.316008997357617e-03 1.1e+00 8.86e-02  9e-02  9e-02 11:30.3

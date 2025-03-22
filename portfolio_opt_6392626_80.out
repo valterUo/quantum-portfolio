@@ -1,0 +1,41 @@
+Running job array 80 on pe61.int.triton.aalto.fi
+Starting at Sat Mar 22 09:29:00 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 81/100: experiments 80 to 80 (total 1)
+Processing experiment 80
+Budget: 3319
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset BA: 5
+Number of qubits for asset MSFT: 3
+Number of qubits for asset NKE: 6
+Total number of qubits:  14
+Optimized Weights (considering variance, skewness and kurtosis):
+BA: 0.00%
+MSFT: 100.00%
+NKE: 0.00%
+Left over budget:  122.11539260346763
+Optimized Discrete Allocation:
+BA: 1
+MSFT: 7
+NKE: 1
+Maximized utility from continuous higher moments:  -119.25609238388398
+Budget constraint not satisfied 3321.0403366088867 3319 Difference:  -2.0403366088867188
+smallest_eigenvalues: [-0.12759321209889243]
+smallest_bitstrings: ['00000111101000']
+first_excited_energy: None
+optimized_portfolio: [{'BA': 0, 'MSFT': 7, 'NKE': 5}]
+second_optimized_portfolio: None
+result_with_budget: [{'portfolio': {'BA': 0, 'MSFT': 7, 'NKE': 5}, 'budget': 3321.0403366088867, 'difference': -2.0403366088867188, 'objective_value': -240.34599666208953}]
+result_with_budget_excited: None
+Initial params:  [2.51063067 1.44978017 2.45210473 0.37157007 2.01037118 0.45035763
+ 2.96776493 1.63943485 1.3026989  0.83112597 2.43232687 1.43303853
+ 1.78578792 0.0590299  1.94035914 1.92295543 1.93815531 2.96487203
+ 2.14200164 1.12942738]
+(6_w,12)-aCMA-ES (mu_w=3.7,w_1=40%) in dimension 20 (seed=766874, Sat Mar 22 09:48:32 2025)
+Iterat #Fevals   function value  axis ratio  sigma  min&max std  t[m:s]
+    1     12 -9.285878508424761e-02 1.0e+00 9.68e-02  1e-01  1e-01 3:58.6
+    2     24 -8.656113662158414e-02 1.1e+00 9.66e-02  1e-01  1e-01 7:32.3
+    3     36 -9.179372227373718e-02 1.2e+00 9.57e-02  9e-02  1e-01 10:26.0
+    4     48 -9.343302622769209e-02 1.2e+00 9.26e-02  9e-02  1e-01 13:19.7
+    5     60 -8.983029235271534e-02 1.2e+00 9.07e-02  9e-02  9e-02 16:14.6
+    6     72 -9.118177171940695e-02 1.2e+00 8.77e-02  8e-02  9e-02 19:08.6

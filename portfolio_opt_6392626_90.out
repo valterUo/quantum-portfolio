@@ -1,0 +1,39 @@
+Running job array 90 on pe82.int.triton.aalto.fi
+Starting at Sat Mar 22 09:29:00 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 91/100: experiments 90 to 90 (total 1)
+Processing experiment 90
+Budget: 4855
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset INTC: 8
+Number of qubits for asset NKE: 7
+Total number of qubits:  15
+Optimized Weights (considering variance, skewness and kurtosis):
+INTC: 25.27%
+NKE: 74.73%
+Left over budget:  18.081271481045405
+Optimized Discrete Allocation:
+INTC: 61
+NKE: 48
+Maximized utility from continuous higher moments:  -1234597.394093473
+Budget constraint satisfied 4822.591278076172 4855 Difference:  32.408721923828125
+smallest_eigenvalues: [-0.22340120622893794]
+smallest_bitstrings: ['010001001110110']
+first_excited_energy: None
+optimized_portfolio: [{'INTC': 34, 'NKE': 55}]
+second_optimized_portfolio: None
+result_with_budget: [{'portfolio': {'INTC': 34, 'NKE': 55}, 'budget': 4822.591278076172, 'difference': 32.408721923828125, 'objective_value': -640818.6330912597}]
+result_with_budget_excited: None
+Initial params:  [2.51063067 1.44978017 2.45210473 0.37157007 2.01037118 0.45035763
+ 2.96776493 1.63943485 1.3026989  0.83112597 2.43232687 1.43303853
+ 1.78578792 0.0590299  1.94035914 1.92295543 1.93815531 2.96487203
+ 2.14200164 1.12942738]
+(6_w,12)-aCMA-ES (mu_w=3.7,w_1=40%) in dimension 20 (seed=759583, Sat Mar 22 09:35:24 2025)
+Iterat #Fevals   function value  axis ratio  sigma  min&max std  t[m:s]
+    1     12 -1.051302803236746e-01 1.0e+00 9.11e-02  9e-02  9e-02 4:13.3
+    2     24 -1.138176740598613e-01 1.1e+00 8.85e-02  9e-02  9e-02 8:25.3
+    3     36 -1.188255627314500e-01 1.1e+00 8.80e-02  9e-02  9e-02 12:38.0
+    4     48 -1.245793942980862e-01 1.2e+00 8.91e-02  9e-02  9e-02 16:49.5
+    5     60 -1.401785695970196e-01 1.2e+00 9.06e-02  9e-02  9e-02 21:01.2
+    6     72 -1.418628756344618e-01 1.3e+00 9.45e-02  9e-02  1e-01 25:12.6
+    7     84 -1.294410702382109e-01 1.3e+00 9.85e-02  9e-02  1e-01 29:23.2
