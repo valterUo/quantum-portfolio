@@ -3,3 +3,4 @@
 /scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
   backends.update(_get_backends("networkx.backends"))
 [                       0%                       ][**********************67%*******                ]  2 of 3 completed[*********************100%***********************]  3 of 3 completed
+slurmstepd: error: *** JOB 6370637 ON pe25 CANCELLED AT 2025-03-22T09:23:11 ***
