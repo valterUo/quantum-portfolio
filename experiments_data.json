@@ -13,11 +13,11 @@
         },
         {
             "max_qubits": 6,
-            "budget": 335,
+            "budget": 1196,
             "stocks": [
-                "MMM",
-                "CSCO",
-                "V"
+                "CRM",
+                "CAT",
+                "HD"
             ],
             "start": "2015-01-01",
             "end": "2025-01-01",

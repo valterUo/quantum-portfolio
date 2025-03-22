@@ -595,7 +595,7 @@ class HigherOrderPortfolioQAOA:
         # Make initial params 1-D array
         initial_params = np.concatenate((initial_params[0], initial_params[1]))
         print("Initial params: ", initial_params)
-        es = cma.CMAEvolutionStrategy(initial_params, sigma0=0.1, options={"maxiter": 1000})
+        es = cma.CMAEvolutionStrategy(initial_params, sigma0=0.1, options={"maxiter": 300})
         result = es.optimize(objective_function)
         optimized_params = result.result.xbest
         final_expectation_value = qaoa_circuit(optimized_params)
