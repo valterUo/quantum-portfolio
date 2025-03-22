@@ -1,0 +1,21 @@
+Running job array 98 on pe22.int.triton.aalto.fi
+Starting at Fri Mar 21 16:13:35 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 99/100: experiments 98 to 98 (total 1)
+Processing experiment 98
+Budget: 5835
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset CAT: 5
+Number of qubits for asset MRK: 6
+Number of qubits for asset UNH: 4
+Total number of qubits:  15
+Optimized Weights (considering variance, skewness and kurtosis):
+CAT: 54.34%
+MRK: 0.00%
+UNH: 45.66%
+Left over budget:  63.54876787266403
+Optimized Discrete Allocation:
+CAT: 9
+UNH: 5
+Maximized utility from continuous higher moments:  -215.19044050245057
+Job finished at Fri Mar 21 19:54:24 EET 2025

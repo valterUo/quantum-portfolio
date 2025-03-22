@@ -1,0 +1,21 @@
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/cma/s.py:15: UserWarning: Could not import matplotlib.pyplot, therefore ``cma.plot()`` etc. is not available
+  _warnings.warn('Could not import matplotlib.pyplot, therefore'
+/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+[                       0%                       ][**********************67%*******                ]  2 of 3 completed[*********************100%***********************]  3 of 3 completed
+Traceback (most recent call last):
+  File "/scratch/work/uotilav2/quantum-portfolio/experiments.py", line 116, in <module>
+    ) = portfolio_hubo.solve_exactly()
+  File "/scratch/work/uotilav2/quantum-portfolio/portfolio_hubo_qaoa_light.py", line 461, in solve_exactly
+    self.smallest_eigenvalues, self.smallest_eigenvectors, eigenvalues = smallest_sparse_eigenpairs(cost_matrix)
+  File "/scratch/work/uotilav2/quantum-portfolio/utils.py", line 86, in smallest_sparse_eigenpairs
+    eigenvalues, eigenvectors = scipy.sparse.linalg.eigsh(A, k=6, which='SA')
+  File "/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/scipy/sparse/linalg/_eigen/arpack/arpack.py", line 1577, in eigsh
+    ret = eigs(A, k, M=M, sigma=sigma, which=which, v0=v0,
+  File "/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/scipy/sparse/linalg/_eigen/arpack/arpack.py", line 1355, in eigs
+    params.iterate()
+  File "/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/scipy/sparse/linalg/_eigen/arpack/arpack.py", line 760, in iterate
+    self._raise_no_convergence()
+  File "/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/scipy/sparse/linalg/_eigen/arpack/arpack.py", line 377, in _raise_no_convergence
+    raise ArpackNoConvergence(msg % (num_iter, k_ok, self.k), ev, vec)
+scipy.sparse.linalg._eigen.arpack.arpack.ArpackNoConvergence: ARPACK error -1: No convergence (163841 iterations, 0/6 eigenvectors converged) [ARPACK error -14: ZNAUPD did not find any eigenvalues to sufficient accuracy.]
