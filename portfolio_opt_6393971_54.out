@@ -1,0 +1,20 @@
+Running job array 54 on milan26.int.triton.aalto.fi
+Starting at Sat Mar 22 10:19:09 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 55/100: experiments 54 to 54 (total 1)
+Processing experiment 54
+Budget: 4511
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset AAPL: 5
+Number of qubits for asset HON: 5
+Number of qubits for asset V: 4
+Total number of qubits:  14
+Optimized Weights (considering variance, skewness and kurtosis):
+AAPL: 100.00%
+HON: 0.00%
+V: 0.00%
+Left over budget:  8.390463235538846
+Optimized Discrete Allocation:
+AAPL: 18
+Maximized utility from continuous higher moments:  -2316.6747976917527
+Job finished at Sat Mar 22 10:44:15 EET 2025

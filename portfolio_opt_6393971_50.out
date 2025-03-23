@@ -1,0 +1,21 @@
+Running job array 50 on milan26.int.triton.aalto.fi
+Starting at Sat Mar 22 10:19:10 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 51/100: experiments 50 to 50 (total 1)
+Processing experiment 50
+Budget: 4501
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset CRM: 4
+Number of qubits for asset JPM: 5
+Number of qubits for asset PG: 5
+Total number of qubits:  14
+Optimized Weights (considering variance, skewness and kurtosis):
+CRM: 58.19%
+JPM: 41.81%
+PG: 0.00%
+Left over budget:  157.01167275316493
+Optimized Discrete Allocation:
+CRM: 8
+JPM: 7
+Maximized utility from continuous higher moments:  -623.3067424307192
+Job finished at Sat Mar 22 10:47:50 EET 2025

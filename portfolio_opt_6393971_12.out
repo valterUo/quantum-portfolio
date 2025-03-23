@@ -1,0 +1,9 @@
+Running job array 12 on pe54.int.triton.aalto.fi
+Starting at Sat Mar 22 10:18:25 EET 2025
+Activating virtual environment at /scratch/work/uotilav2/quantum-portfolio/venv
+Processing batch 13/100: experiments 12 to 12 (total 1)
+Processing experiment 12
+Budget: 622
+YF.download() has changed argument auto_adjust default to True
+Number of qubits for asset JPM: 2
+Job finished at Sat Mar 22 10:18:49 EET 2025
