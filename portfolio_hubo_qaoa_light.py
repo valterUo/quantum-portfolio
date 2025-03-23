@@ -559,7 +559,7 @@ class HigherOrderPortfolioQAOA:
 
 
     def solve_with_qaoa_cma_es(self):
-        maxiter = 1000
+        maxiter = 800
         if self.n_qubits > 13:
             maxiter = 300
         
