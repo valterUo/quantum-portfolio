@@ -1,32 +1,0 @@
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/cma/s.py:15: UserWarning: Could not import matplotlib.pyplot, therefore ``cma.plot()`` etc. is not available
-  _warnings.warn('Could not import matplotlib.pyplot, therefore'
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
-  backends.update(_get_backends("networkx.backends"))
-[                       0%                       ][**********************67%*******                ]  2 of 3 completed[*********************100%***********************]  3 of 3 completed
-
-2 Failed downloads:
-['WBA', 'VZ']: OperationalError('disk I/O error')
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/lib/function_base.py:520: RuntimeWarning: Mean of empty slice.
-  avg = a.mean(axis, **keepdims_kw)
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/core/_methods.py:121: RuntimeWarning: invalid value encountered in divide
-  ret = um.true_divide(
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/pandas/core/frame.py:11211: RuntimeWarning: Degrees of freedom <= 0 for slice
-  base_cov = np.cov(mat.T, ddof=ddof)
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/lib/function_base.py:2748: RuntimeWarning: divide by zero encountered in divide
-  c *= np.true_divide(1, fact)
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/lib/function_base.py:2748: RuntimeWarning: invalid value encountered in multiply
-  c *= np.true_divide(1, fact)
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
-  return _methods._mean(a, axis=axis, dtype=dtype,
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/core/_methods.py:206: RuntimeWarning: Degrees of freedom <= 0 for slice
-  ret = _var(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/core/_methods.py:163: RuntimeWarning: invalid value encountered in divide
-  arrmean = um.true_divide(arrmean, div, out=arrmean,
-/scratch/work/uotilav2/quantum-portfolio/venv/lib64/python3.9/site-packages/numpy/core/_methods.py:195: RuntimeWarning: invalid value encountered in divide
-  ret = um.true_divide(
-Traceback (most recent call last):
-  File "/scratch/work/uotilav2/quantum-portfolio/experiments.py", line 85, in <module>
-    portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
-  File "/scratch/work/uotilav2/quantum-portfolio/portfolio_hubo_qaoa_light.py", line 82, in __init__
-    N = int(np.ceil(np.log2(np.ceil(budget/prices_now[asset]))))
-ValueError: cannot convert float NaN to integer
