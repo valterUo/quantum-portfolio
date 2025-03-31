@@ -410,17 +410,19 @@ class HigherOrderPortfolioQAOA:
             allocator = DiscreteAllocation(weights, self.prices_now, self.budget)
             allocation, left_overs = allocator.lp_portfolio()
             print("Left over budget: ", left_overs)
-            
-            print("Optimized Discrete Allocation:")
-            for asset, amount in allocation.items():
-                print(f"{asset}: {amount}")
 
-            value = self.get_objective_value(allocation)
+            print("Optimized discrete allocation for mean and variance:")
+            final_allocation = {}
+            for asset, amount in allocation.items():
+                final_allocation[self.stocks[asset]] = amount
+                print(f"{self.stocks[asset]}: {amount}")
+
+            value = self.get_objective_value(final_allocation)
             print("Maximized utility from continuous mean variance: ", value)
 
             weights = {self.stocks[asset]: weight for asset, weight in weights.items()}
 
-            return weights, allocation, value, left_overs
+            return weights, final_allocation, value, left_overs
 
         else:
             hef = HigherMomentPortfolioOptimizer(self.stocks,
