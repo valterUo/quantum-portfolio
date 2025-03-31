@@ -1,9 +1,11 @@
 import itertools
+import time
 import cma
 import pennylane as qml
 from pennylane import numpy as np
 from pypfopt import EfficientFrontier
 from pypfopt.discrete_allocation import DiscreteAllocation
+from scipy.optimize import minimize, approx_fprime
 
 from old.portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
 from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, replace_h_rz_h_with_rx, smallest_eigenpairs, smallest_sparse_eigenpairs
@@ -186,6 +188,34 @@ class HigherOrderPortfolioQAOA:
             budget_const[(asset1, asset2)] = 2*scaler*self.prices_now[asset1]*self.prices_now[asset2]
         return budget_const
 
+    def construct_budget_constraint_strict(self, scaler = 1):
+        # Sum over all variables sums to budget (sum_{v in vars} v - budget in terms of assets)**2
+        # Recall that the variables at this stage are integers so x^n != x
+        # But in reality, not price of every stock is one, so in reality we have
+        # (sum_{i=0}^{n} price_i z_i - budget in terms of dollars)**2 = 0
+
+        # Encode budget using integer slack variables for the assets
+        # self.budget = sum of slack variables
+
+        self.budget_to_qubits = {}
+        asset_prices_now = [self.prices_now[asset] for asset in self.stocks]
+        self.budget_dicretization_unit = np.gcd.reduce(asset_prices_now + [self.budget])
+        qubits_for_budget = int(np.ceil(np.log2(self.budget/self.budget_dicretization_unit)))
+
+        for i in range(qubits_for_budget):
+            self.assets_to_qubits[f"slack_{i}"] = list(range(self.total_qubits, self.total_qubits + qubits_for_budget))
+            self.total_qubits += qubits_for_budget
+
+        # Integer variables are self.budget_dicretization_units 
+
+        budget_const = {}
+        for asset in self.stocks:
+            budget_const[(asset,)] = -2*self.budget*scaler*self.prices_now[asset]
+            budget_const[(asset, asset)] = scaler*self.prices_now[asset]**2
+        for asset1, asset2 in itertools.combinations(self.stocks, 2):
+            budget_const[(asset1, asset2)] = 2*scaler*self.prices_now[asset1]*self.prices_now[asset2]
+
+        return budget_const
 
     def replace_integer_variables_with_binary_variables(self):
         """
@@ -454,6 +484,40 @@ class HigherOrderPortfolioQAOA:
             return weights, allocation, value, left_overs
         
 
+    def solve_with_continuous_variables_unconstrained(self):
+        if self.coskewness_tensor is None and self.cokurtosis_tensor is None:
+            raise ValueError("Unconstrained optimization is only possible with higher moments")
+        else:
+            hef = HigherMomentPortfolioOptimizer(self.stocks,
+                                                 self.expected_returns, 
+                                                 self.covariance_matrix, 
+                                                 self.coskewness_tensor, 
+                                                 self.cokurtosis_tensor, 
+                                                 risk_aversion=self.risk_aversion)
+            
+            weights = hef.optimize_portfolio_with_higher_moments_unconstrained()
+            
+            print("Optimized Weights with unconstrained classical continuous variable (considering variance, skewness and kurtosis):")
+            for asset, weight in weights.items():
+                print(f"{asset}: {weight:.2%}")
+                
+            allocation, left_overs = hef.get_discrete_allocation(weights, self.prices_now, self.budget)
+            print("Left over budget for unconstrained: ", left_overs)
+
+            print("Optimized Discrete Allocation for unconstrained:")
+            for asset, amount in allocation.items():
+                print(f"{asset}: {amount}")
+            
+            for stock in self.stocks:
+                if stock not in allocation:
+                    allocation[stock] = 0
+            
+            value = self.get_objective_value(allocation)
+            print("Maximized utility from continuous higher moments for unconstrained: ", value)
+            
+            return weights, allocation, value, left_overs
+        
+
     def solve_exactly(self):
         if self.n_qubits < 14:
             cost_matrix = self.get_cost_hamiltonian().matrix(wire_order=range(self.n_qubits))
@@ -612,8 +676,196 @@ class HigherOrderPortfolioQAOA:
         result1 = self.satisfy_budget_constraint(optimized_portfolios)
         objective_values = [float(self.get_objective_value(optimized_portfolios[i])) for i in range(2)]
         training_history = self.cma_result_to_dict(result.result)
-        return two_most_probable_states, final_expectation_value, optimized_params, es.result.iterations, states_probs, optimized_portfolios, training_history, objective_values, result1
+        return (two_most_probable_states, 
+                final_expectation_value, 
+                optimized_params, 
+                es.result.iterations, 
+                states_probs, 
+                optimized_portfolios, 
+                training_history, 
+                objective_values, 
+                result1)
 
+    def solve_with_qaoa_scipy(self, optimizer='COBYLA'):
+        """
+        Solve the optimization problem using QAOA with a specified SciPy optimizer.
+        
+        Parameters:
+        -----------
+        optimizer : str
+            The name of the SciPy optimizer to use. Must be one of:
+            'Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B',
+            'TNC', 'COBYLA', 'COBYQA', 'SLSQP', 'trust-constr', 'dogleg',
+            'trust-ncg', 'trust-krylov', 'trust-exact'
+        
+        Returns:
+        --------
+        tuple: Results of the optimization including states, expectation value, parameters, etc.
+        """
+        # Validate the optimizer choice
+        valid_optimizers = [
+            'Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B',
+            'TNC', 'COBYLA', 'COBYQA', 'SLSQP', 'trust-constr', 'dogleg',
+            'trust-ncg', 'trust-krylov', 'trust-exact'
+        ]
+        
+        if optimizer not in valid_optimizers:
+            raise ValueError(f"Optimizer must be one of {valid_optimizers}")
+        
+        # Set maximum iterations based on problem size
+        maxiter = 10000
+        if self.n_qubits > 13:
+            maxiter = 5000
+        
+        # Setup quantum device
+        dev = qml.device('default.qubit', wires=self.n_qubits)
+        
+        # Get Hamiltonians
+        cost_hamiltonian = self.get_cost_hamiltonian()
+        mixer_hamiltonian = qml.qaoa.x_mixer(range(self.n_qubits))
+
+        # Define QAOA layer
+        def qaoa_layer(gamma, alpha):
+            qml.qaoa.cost_layer(gamma, cost_hamiltonian)
+            qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
+        
+        # Define circuit for expectation value
+        @qml.qnode(dev)
+        def qaoa_circuit(params):
+            gammas = params[:self.layers]
+            alphas = params[self.layers:]
+            for wire in range(self.n_qubits):
+                qml.Hadamard(wires=wire)
+            qml.layer(qaoa_layer, self.layers, gammas, alphas)
+            return qml.expval(cost_hamiltonian)
+        
+        # Define objective function for optimization
+        # Track function evaluations
+        func_evals = [0]  # Using a list for mutable counter
+        
+        def objective_function(params):
+            func_evals[0] += 1
+            return float(qaoa_circuit(params))
+        
+        # Define circuit for probability distribution
+        @qml.qnode(dev)
+        def qaoa_probs_circuit(params):
+            gammas = params[:self.layers]
+            alphas = params[self.layers:]
+            for wire in range(self.n_qubits):
+                qml.Hadamard(wires=wire)
+            qml.layer(qaoa_layer, self.layers, gammas, alphas)
+            return qml.probs()
+
+        # Generate initial parameters
+        initial_params = np.pi * np.random.rand(2, self.layers)
+        initial_params = np.concatenate((initial_params[0], initial_params[1]))
+        #print("Initial params: ", initial_params)
+        
+        # Define optimization options
+        options = {'maxiter': maxiter}
+        
+        # Some optimizers require bounds or additional parameters
+        bounds = None
+        if optimizer in ['L-BFGS-B', 'TNC', 'SLSQP', 'trust-constr']:
+            bounds = [(0, 2*np.pi) for _ in range(len(initial_params))]
+        
+        # Extra options for specific optimizers
+        if optimizer in ['trust-constr', 'trust-ncg', 'trust-krylov', 'trust-exact']:
+            options['gtol'] = 1e-5
+        
+        # Some optimizers may require a Jacobian/Hessian, 
+        # these are more demanding and should benchmarked the last
+        jac = None
+        hess = None
+        if optimizer in ['Newton-CG', 'trust-ncg', 'trust-krylov', 'trust-exact', 'dogleg']:
+            # For demonstration, we're using a finite difference approximation
+            # In a real scenario, you might want to compute analytical derivatives
+            jac = lambda x : approx_fprime(x, objective_function, 0.01)
+            
+            if optimizer in ['trust-exact', 'dogleg', 'trust-ncg', 'trust-krylov']:
+                
+                def hessian(x):
+                    # Step size for finite difference approximation
+                    epsilon = np.sqrt(np.finfo(float).eps)  # ~1.5e-8
+                    n = len(x)
+                    H = np.zeros((n, n))
+                    
+                    for i in range(n):
+                        def partial_derivative_i(x):
+                            return approx_fprime(x, objective_function, epsilon)[i]
+                        
+                        H[i] = approx_fprime(x, partial_derivative_i, epsilon)
+                    
+                    # Ensure symmetry (important for optimization stability)
+                    H = (H + H.T) / 2
+                    return H
+                
+                hess = hessian
+
+        # Define callback that prints some progress
+        def callback(xk):
+            if func_evals[0] % 100 == 0:
+                print(f"Iteration: {func_evals[0]}")
+                print(f"Objective: {objective_function(xk)}")
+        
+        # Run the optimization with the selected optimizer
+        start_time = time.time()
+        result = minimize(
+            objective_function,
+            initial_params,
+            method=optimizer,
+            bounds=bounds,
+            options=options,
+            jac=jac,
+            hess=hess,
+            callback=callback
+        )
+        end_time = time.time()
+        
+        # Get optimized results
+        optimized_params = result.x
+        final_expectation_value = qaoa_circuit(optimized_params)
+        probs = qaoa_probs_circuit(optimized_params)
+        
+        # Extract the two most probable states
+        two_most_probable = np.argsort(probs)[-2:]
+        states_probs = [probs[i] for i in two_most_probable]
+        two_most_probable_states = [int_to_bitstring(i, self.n_qubits) for i in two_most_probable]
+        
+        # Process results
+        optimized_portfolios = bitstrings_to_optimized_portfolios(two_most_probable_states, self.assets_to_qubits)
+        result1 = self.satisfy_budget_constraint(optimized_portfolios)
+        objective_values = [float(self.get_objective_value(optimized_portfolios[i])) for i in range(2)]
+        
+            # Create training history
+        iterations = getattr(result, 'nit', None)
+        if iterations is None:
+            # Some optimizers don't provide nit attribute
+            iterations = func_evals[0]  # Use our custom counter
+        
+        training_history = {
+            'iterations': int(iterations) if iterations is not None else None,
+            'evaluations': int(func_evals[0]),
+            'final_value': float(final_expectation_value),
+            'success': bool(result.success),
+            'status': int(result.status),
+            'message': str(result.message),
+            'execution_time': float(end_time - start_time),
+            'optimizer': str(optimizer)
+        }
+        
+        return (
+            two_most_probable_states, 
+            final_expectation_value, 
+            optimized_params, 
+            iterations,  # Use our tracked iterations
+            states_probs, 
+            optimized_portfolios, 
+            training_history, 
+            objective_values, 
+            result1
+        )
 
     def get_assets_to_qubits(self):
         return self.assets_to_qubits
@@ -726,3 +978,63 @@ class HigherOrderPortfolioQAOA:
                 print(f"Cost: {cost}")
         
         return params
+    
+    def solve_exactly_with_lobpcg(self):
+        from scipy.sparse.linalg import lobpcg
+
+        k = 2
+        n = 2**self.n_qubits
+        rng = np.random.default_rng()
+        X = rng.normal(size=(n, k))
+        X = X.astype(np.float32)
+
+        cost_matrix = self.get_cost_hamiltonian().matrix(wire_order=range(self.n_qubits))
+
+        eigenvalues, v = lobpcg(cost_matrix, X, largest=False, tol=1e-5)
+        self.smallest_eigenvalues = [eigenvalues[0]]
+        eigenvect = v[:, 0]
+        argmax = np.argmax(np.abs(eigenvect))
+        new_eigenvect = np.zeros_like(eigenvect)
+        new_eigenvect[argmax] = 1
+        self.smallest_eigenvectors = [new_eigenvect]
+        first_excited_energy = [eigenvalues[1]]
+        eigenvect = v[:, 1]
+        argmax = np.argmax(np.abs(eigenvect))
+        new_eigenvect = np.zeros_like(eigenvect)
+        new_eigenvect[argmax] = 1
+        first_excited_state = new_eigenvect
+
+        print("Smallest eigenvalues: ", self.smallest_eigenvalues)
+        print("First excited energy: ", first_excited_energy)
+        print("Smallest eigenvectors: ", self.smallest_eigenvectors)
+        print("First excited state: ", first_excited_state)
+
+        self.smallest_bitstrings = [basis_vector_to_bitstring(v) for v in self.smallest_eigenvectors]
+        print("Smallest bitstrings: ", self.smallest_bitstrings)
+        print(self.assets_to_qubits)
+        optimized_portfolio = bitstrings_to_optimized_portfolios(self.smallest_bitstrings, self.assets_to_qubits)
+        result1 = self.satisfy_budget_constraint(optimized_portfolio)
+        eigenvalues = [float(v) for v in eigenvalues]
+
+        objective_values = [float(self.get_objective_value(allocation)) for allocation in optimized_portfolio]
+        for i, r in enumerate(result1):
+            r["objective_value"] = objective_values[i]
+        
+        second_optimized_portfolio = None
+        result2 = None
+        if first_excited_state is not None:
+            second_smallest_bitstrings = [basis_vector_to_bitstring(first_excited_state)]
+            second_optimized_portfolio = bitstrings_to_optimized_portfolios(second_smallest_bitstrings, self.assets_to_qubits)
+            result2 = self.satisfy_budget_constraint(second_optimized_portfolio)
+            objective_values = [float(self.get_objective_value(allocation)) for allocation in second_optimized_portfolio]
+            for i, r in enumerate(result2):
+                r["objective_value"] = objective_values[i]
+        
+        return (self.smallest_eigenvalues, 
+                self.smallest_bitstrings, 
+                first_excited_energy, 
+                optimized_portfolio, 
+                second_optimized_portfolio, 
+                eigenvalues,
+                result1, 
+                result2)

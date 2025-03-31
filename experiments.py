@@ -55,6 +55,17 @@ if os.path.exists(output_file):
 # Process only the experiments for this batch
 for i, experiment in enumerate(experiments[start_idx:end_idx]):
     experiment_id = start_idx + i
+
+    #    -----------
+    #    The name of the SciPy optimizer to use. Must be one of:
+    #    'Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B',
+    #    'TNC', 'COBYLA', 'COBYQA', 'SLSQP', 'trust-constr' (not reasonable for unconstrained optimization)), 
+    #    'dogleg', 'trust-ncg', 'trust-krylov', 'trust-exact'
+    # Non-scipy optimizers:
+    #    'CMAES' (requires cma package to be installed)
+    # Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'L-BFGS-B'
+
+    classical_optimizer = "CMAES"
     
     # Skip if already processed
     if str(experiment_id) in all_existing_results:
@@ -103,17 +114,45 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
         "value": value,
         "left_overs": left_overs
     }
+    
+    continuous_variables_solution_unconstrained = None
 
-    (
-        smallest_eigenvalues, 
-        smallest_bitstrings, 
-        first_excited_energy, 
-        optimized_portfolio, 
-        second_optimized_portfolio,
-        eigenvalues,
-        result1, 
-        result2
-    ) = portfolio_hubo.solve_exactly()
+    if coskewness_tensor is not None and cokurtosis_tensor is not None:
+        weights, allocation, value, left_overs = portfolio_hubo.solve_with_continuous_variables_unconstrained()
+
+        continuous_variables_solution_unconstrained = {
+            "weights": weights,
+            "allocation": allocation,
+            "value": value,
+            "left_overs": left_overs
+        }
+    try:
+        raise Exception("Testing")
+        (
+            smallest_eigenvalues, 
+            smallest_bitstrings, 
+            first_excited_energy, 
+            optimized_portfolio, 
+            second_optimized_portfolio,
+            eigenvalues,
+            result1, 
+            result2
+        ) = portfolio_hubo.solve_exactly()
+
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Trying different classical eigenvalue solver")
+
+        (
+            smallest_eigenvalues, 
+            smallest_bitstrings, 
+            first_excited_energy, 
+            optimized_portfolio, 
+            second_optimized_portfolio,
+            eigenvalues,
+            result1, 
+            result2
+        ) = portfolio_hubo.solve_exactly_with_lobpcg()
 
     exact_solution = {
         "smallest_eigenvalues": smallest_eigenvalues,
@@ -130,17 +169,32 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
         if key != "spectrum":
             print(f"{key}: {value}")
     
-    (
-        two_most_probable_states, 
-        final_expectation_value, 
-        params, 
-        total_steps, 
-        states_probs, 
-        optimized_portfolios,
-        training_history,
-        objective_values,
-        result1
-    ) = portfolio_hubo.solve_with_qaoa_cma_es()
+    if classical_optimizer == "CMAES":
+    
+        (
+            two_most_probable_states, 
+            final_expectation_value, 
+            params, 
+            total_steps, 
+            states_probs, 
+            optimized_portfolios,
+            training_history,
+            objective_values,
+            result1
+        ) = portfolio_hubo.solve_with_qaoa_cma_es()
+    
+    else:
+        (
+            two_most_probable_states, 
+            final_expectation_value, 
+            params, 
+            total_steps, 
+            states_probs, 
+            optimized_portfolios,
+            training_history,
+            objective_values,
+            result1
+        ) = portfolio_hubo.solve_with_qaoa_scipy(optimizer=classical_optimizer)
 
     qaoa_solution = {
         "two_most_probable_states": two_most_probable_states,
@@ -170,11 +224,13 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
         "log_encoding": True,
         "layers": n_layers,
         "prices_now": {str(k): float(v) for k, v in prices_now.items()},
-        "assets_to_qubits": {str(k): v for k, v in assets_to_qubits.items()}
+        "assets_to_qubits": {str(k): v for k, v in assets_to_qubits.items()},
+        "optimizer": classical_optimizer
     }
 
     results_for_experiment["hyperparams"] = hyperparams
     results_for_experiment["continuous_variables_solution"] = continuous_variables_solution
+    results_for_experiment["continuous_variables_solution_unconstrained"] = continuous_variables_solution_unconstrained
     results_for_experiment["exact_solution"] = exact_solution
     results_for_experiment["qaoa_solution"] = qaoa_solution
 

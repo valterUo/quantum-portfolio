@@ -123,6 +123,7 @@ def basis_vector_to_bitstring(basis_vector):
     assert np.sum(basis_vector) == 1, "Input must be a basis vector"
     index = np.argmax(basis_vector)
     num_qubits = max(int(np.log2(len(basis_vector))), 1)
+    print(num_qubits)
     bitstring = format(index, f'0{num_qubits}b')
     #bitstring = np.array(list(np.binary_repr(index).zfill(num_qubits)))
     bitstring = [int(i) for i in bitstring]
@@ -136,6 +137,8 @@ def bitstrings_to_optimized_portfolios(bitstrings, assets_to_qubits):
     for bitstring in bitstrings:
         portfolio = {}
         for asset, qubits in assets_to_qubits.items():
+            print(qubits)
+            print(bitstring)
             bits = [bitstring[q] for q in qubits]
             portfolio[asset] = bitstring_to_int(bits)
         for asset in assets_to_qubits.keys():

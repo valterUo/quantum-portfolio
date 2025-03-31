@@ -26,6 +26,18 @@ class HigherMomentPortfolioOptimizer:
             return value
         return objective
     
+
+    def get_objective_unconstrained(self):
+        penalizer = 1
+        def objective_unconstrained(w):
+            mu = np.dot(w, self.expected_returns)
+            variance_term = (self.risk_aversion/2) * np.einsum('ij,i,j->', self.covariance_matrix, w, w)
+            skewness_term = (self.risk_aversion/6) * np.einsum("ijk,i,j,k->", self.coskewness, w, w, w)
+            kurtosis_term = (self.risk_aversion/24) * np.einsum("ijkl,k,j,i,l->", self.cokurtosis, w, w, w, w)
+            value = -(mu - variance_term + skewness_term - kurtosis_term) + penalizer * (np.sum(w) - 1)**2
+            return value
+        return objective_unconstrained
+    
     
     def optimize_portfolio_with_higher_moments(self):
         num_assets = len(self.expected_returns)
@@ -38,6 +50,18 @@ class HigherMomentPortfolioOptimizer:
         self.x = result.x
         return self.weights
     
+
+    def optimize_portfolio_with_higher_moments_unconstrained(self):
+        num_assets = len(self.expected_returns)
+        bounds = [(0, 1) for _ in range(num_assets)]
+        objective = self.get_objective_unconstrained()
+        w0 = np.ones(num_assets) / num_assets
+        result = minimize(objective, w0, bounds=bounds)
+        self.weights = dict(zip(self.stocks, result.x))
+        self.x = result.x
+        return self.weights
+    
+
     def get_optimal_value(self):
         objective = self.get_objective()
         if self.x is None:
