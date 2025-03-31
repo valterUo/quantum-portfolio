@@ -10,7 +10,7 @@ from jax import numpy as jnp
 from pypfopt import EfficientFrontier
 #import networkx as nx
 
-from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
+from old.portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
 from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)

@@ -2,7 +2,7 @@ import json
 import numpy as np
 import yfinance as yf
 from coskweness_cokurtosis import coskewness, cokurtosis
-from portfolio_hubo_qaoa import HigherOrderPortfolioQAOA
+from old.portfolio_hubo_qaoa import HigherOrderPortfolioQAOA
 import os
 from concurrent.futures import ProcessPoolExecutor
 import traceback

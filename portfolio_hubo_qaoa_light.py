@@ -5,7 +5,7 @@ from pennylane import numpy as np
 from pypfopt import EfficientFrontier
 from pypfopt.discrete_allocation import DiscreteAllocation
 
-from portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
+from old.portfolio_higher_moments_classical import HigherMomentPortfolioOptimizer
 from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios, int_to_bitstring, normalize_linear_combination, replace_h_rz_h_with_rx, smallest_eigenpairs, smallest_sparse_eigenpairs
 
 np.random.seed(0)

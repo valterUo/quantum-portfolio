@@ -79,8 +79,8 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
 
     expected_returns = mean_historical_return(returns, returns_data=True).to_numpy()
     covariance_matrix = sample_cov(returns, returns_data=True).to_numpy()
-    coskewness_tensor = coskewness(numpy_returns)
-    cokurtosis_tensor = cokurtosis(numpy_returns)
+    coskewness_tensor = None #coskewness(numpy_returns)
+    cokurtosis_tensor = None #cokurtosis(numpy_returns)
 
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,
