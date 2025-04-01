@@ -5,7 +5,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --mem-per-cpu=9000MB
 #SBATCH --cpus-per-task=1
-#SBATCH --array=0-99
+#SBATCH --array=40-43
 
 echo "Running job array ${SLURM_ARRAY_TASK_ID} on $(hostname)"
 echo "Starting at $(date)"

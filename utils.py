@@ -83,7 +83,7 @@ def smallest_eigenpairs(A, filename = None):
 def smallest_sparse_eigenpairs(A):
     
     # Get the smallest eigenvalues and eigenvectors
-    eigenvalues, eigenvectors = scipy.sparse.linalg.eigsh(A, k=6, which='SA')
+    eigenvalues, eigenvectors = scipy.sparse.linalg.eigsh(A, k=3, which='SA')
     eigenvalues = np.real(eigenvalues)
     eigenvectors = np.real(eigenvectors)
     

@@ -61,7 +61,8 @@ class HigherOrderPortfolioQAOA:
                  cokurtosis_tensor = None, 
                  risk_aversion = 3, 
                  mixer = "x", 
-                 log_encoding = False):
+                 log_encoding = False,
+                 strict_budget_constraint = False):
         # Implementation assumes that stocks and other data are ordered to match
         self.stocks = stocks
         self.expected_returns = expected_returns
@@ -75,6 +76,7 @@ class HigherOrderPortfolioQAOA:
         self.num_assets = len(expected_returns)
         self.prices_now = prices_now
         self.num_qubits_per_asset = {}
+        self.strict_budget_constraint = strict_budget_constraint
         
         if log_encoding:
             # Smallest N such that 2^N > budget
@@ -105,27 +107,30 @@ class HigherOrderPortfolioQAOA:
         self.assets_to_qubits = {}
         self.qubits_to_assets = {}
 
-        self.total_qubits = 0
+        self.n_qubits = 0
         for asset in stocks:
-            self.assets_to_qubits[asset] = list(range(self.total_qubits, self.total_qubits + self.num_qubits_per_asset[asset]))
+            self.assets_to_qubits[asset] = list(range(self.n_qubits, self.n_qubits + self.num_qubits_per_asset[asset]))
             for qubit in self.assets_to_qubits[asset]:
                 self.qubits_to_assets[qubit] = asset
-            self.total_qubits += self.num_qubits_per_asset[asset]
+            self.n_qubits += self.num_qubits_per_asset[asset]
         
-        self.n_qubits = self.total_qubits
         self.layers = self.n_qubits if layers == None else layers
         self.layers = min(10, self.layers)
-        print("Total number of qubits: ", self.n_qubits)
-        assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
-
         self.init_params = 0.01*np.random.rand(2, self.layers, requires_grad=True)
         
         #print("Constructing cost hubo with integer variables")
         self.construct_cost_hubo_int()
 
         scaler = 1 #sum([abs(v) for v in self.cost_hubo_int.values()])
-                
-        self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
+
+        if strict_budget_constraint:
+            self.budget_constraint = self.construct_budget_constraint_strict(scaler=scaler)
+        else:
+            self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
+
+        print("Total number of qubits: ", self.n_qubits)
+        assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
+        
         #print("Adding budget constraints to the cost function -> constructing full hubo problem")
         for var, coeff in self.budget_constraint.items():
             if var in self.cost_hubo_int:
@@ -189,6 +194,8 @@ class HigherOrderPortfolioQAOA:
         return budget_const
 
     def construct_budget_constraint_strict(self, scaler = 1):
+        scaler = self.budget**2 #/(len(self.stocks) * self.budget)
+        from numpy import gcd
         # Sum over all variables sums to budget (sum_{v in vars} v - budget in terms of assets)**2
         # Recall that the variables at this stage are integers so x^n != x
         # But in reality, not price of every stock is one, so in reality we have
@@ -198,22 +205,43 @@ class HigherOrderPortfolioQAOA:
         # self.budget = sum of slack variables
 
         self.budget_to_qubits = {}
-        asset_prices_now = [self.prices_now[asset] for asset in self.stocks]
-        self.budget_dicretization_unit = np.gcd.reduce(asset_prices_now + [self.budget])
-        qubits_for_budget = int(np.ceil(np.log2(self.budget/self.budget_dicretization_unit)))
+        asset_prices_now = [int(self.prices_now[asset]) for asset in self.stocks]
+        self.budget_dicretization_unit = gcd.reduce(asset_prices_now + [int(self.budget)])
+        print("Budget discretization unit: ", self.budget_dicretization_unit)
+        qubits_for_budget = int(np.floor(np.log2(self.budget/self.budget_dicretization_unit)))
+        last_budget_qubit = self.n_qubits + qubits_for_budget
+        budget_for_last_qubit = self.budget - self.budget_dicretization_unit*2**qubits_for_budget
+        slacks = []
+        #for i in range(qubits_for_budget):
+        self.assets_to_qubits[f"slack_int"] = list(range(self.n_qubits, self.n_qubits + qubits_for_budget))
+        slacks.append(f"slack_int")
+        self.n_qubits += qubits_for_budget
+        self.assets_to_qubits[f"slack_int_last"] = [last_budget_qubit]
+        slacks.append(f"slack_int_last")
+        self.n_qubits += 1
 
-        for i in range(qubits_for_budget):
-            self.assets_to_qubits[f"slack_{i}"] = list(range(self.total_qubits, self.total_qubits + qubits_for_budget))
-            self.total_qubits += qubits_for_budget
+        budget_qubit_coeffs = {"slack_int": self.budget_dicretization_unit, "slack_int_last": budget_for_last_qubit}
 
-        # Integer variables are self.budget_dicretization_units 
+        # Integer variables are self.budget_dicretization_units
+
+        all_vars = list(self.stocks) + slacks
 
         budget_const = {}
-        for asset in self.stocks:
-            budget_const[(asset,)] = -2*self.budget*scaler*self.prices_now[asset]
-            budget_const[(asset, asset)] = scaler*self.prices_now[asset]**2
-        for asset1, asset2 in itertools.combinations(self.stocks, 2):
-            budget_const[(asset1, asset2)] = 2*scaler*self.prices_now[asset1]*self.prices_now[asset2]
+        for v in all_vars:
+            if v in self.stocks:
+                budget_const[(v, v)] = scaler*self.prices_now[v]**2
+            else:
+                budget_const[(v, v)] = scaler*budget_qubit_coeffs[v]**2
+        
+        for v1, v2 in itertools.combinations(all_vars, 2):
+            if v1 in self.stocks and v2 in self.stocks:
+                budget_const[(v1, v2)] = 2*scaler*self.prices_now[v1]*self.prices_now[v2]
+            elif v1 in slacks and v2 in slacks:
+                budget_const[(v1, v2)] = 2*scaler*budget_qubit_coeffs[v1]*budget_qubit_coeffs[v2]
+            elif v1 in self.stocks and v2 in slacks:
+                budget_const[(v1, v2)] = -2*scaler*self.prices_now[v1]*budget_qubit_coeffs[v2]
+            elif v1 in slacks and v2 in self.stocks:
+                budget_const[(v1, v2)] = -2*scaler*self.prices_now[v2]*budget_qubit_coeffs[v1]
 
         return budget_const
 
@@ -555,7 +583,8 @@ class HigherOrderPortfolioQAOA:
         for portfolio in optimized_portfolio:
             B = 0
             for asset in portfolio:
-                B += self.prices_now[asset]*portfolio[asset]
+                if asset in self.stocks:
+                    B += self.prices_now[asset]*portfolio[asset]
             if B > self.budget:
                 print("Budget constraint not satisfied", B, self.budget, "Difference: ", self.budget - B)
             else:

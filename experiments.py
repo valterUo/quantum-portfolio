@@ -102,7 +102,8 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
                                             coskewness_tensor=coskewness_tensor, 
                                             cokurtosis_tensor=cokurtosis_tensor,
                                             log_encoding=True,
-                                            risk_aversion=risk_aversion)
+                                            risk_aversion=risk_aversion,
+                                            strict_budget_constraint=False)
     
     assets_to_qubits = portfolio_hubo.get_assets_to_qubits()
     
