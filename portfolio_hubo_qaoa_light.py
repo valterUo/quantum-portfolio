@@ -1017,7 +1017,7 @@ class HigherOrderPortfolioQAOA:
         X = rng.normal(size=(n, k))
         X = X.astype(np.float32)
 
-        cost_matrix = self.get_cost_hamiltonian().matrix(wire_order=range(self.n_qubits))
+        cost_matrix = self.get_cost_hamiltonian().sparse_matrix(wire_order=range(self.n_qubits))
 
         eigenvalues, v = lobpcg(cost_matrix, X, largest=False, tol=1e-5)
         self.smallest_eigenvalues = [eigenvalues[0]]
