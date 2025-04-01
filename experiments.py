@@ -24,10 +24,20 @@ experiments = None
 with open("experiments_data.json", "r") as f:
     experiments = list(json.load(f)["data"])
 
-output_file = f"portfolio_optimization_results_batch_{args.batch_num}.json"
+#    The name of the SciPy optimizer to use. Must be one of:
+#    'Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B',
+#    'TNC', 'COBYLA', 'COBYQA', 'SLSQP', 'trust-constr' (not reasonable for unconstrained optimization)), 
+#    'dogleg', 'trust-ncg', 'trust-krylov', 'trust-exact'
+# Non-scipy optimizers:
+#    'CMAES' (requires cma package to be installed)
+# Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'L-BFGS-B'
+
+classical_optimizer = "COBYLA"
+
+output_file = f"portfolio_optimization_results_batch_{classical_optimizer}_{args.batch_num}.json"
 
 # Find files with portfolio_optimization_results_batch_ in the name
-previous_output_files = [f for f in os.listdir() if "portfolio_optimization_results_batch_" in f]
+previous_output_files = [f for f in os.listdir() if f"portfolio_optimization_results_batch_{classical_optimizer}" in f]
 
 # Calculate which experiments to process in this batch
 total_experiments = len(experiments)
@@ -55,17 +65,6 @@ if os.path.exists(output_file):
 # Process only the experiments for this batch
 for i, experiment in enumerate(experiments[start_idx:end_idx]):
     experiment_id = start_idx + i
-
-    #    -----------
-    #    The name of the SciPy optimizer to use. Must be one of:
-    #    'Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B',
-    #    'TNC', 'COBYLA', 'COBYQA', 'SLSQP', 'trust-constr' (not reasonable for unconstrained optimization)), 
-    #    'dogleg', 'trust-ncg', 'trust-krylov', 'trust-exact'
-    # Non-scipy optimizers:
-    #    'CMAES' (requires cma package to be installed)
-    # Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'L-BFGS-B'
-
-    classical_optimizer = "CMAES"
     
     # Skip if already processed
     if str(experiment_id) in all_existing_results:
@@ -90,8 +89,8 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
 
     expected_returns = mean_historical_return(returns, returns_data=True).to_numpy()
     covariance_matrix = sample_cov(returns, returns_data=True).to_numpy()
-    coskewness_tensor = None #coskewness(numpy_returns)
-    cokurtosis_tensor = None #cokurtosis(numpy_returns)
+    coskewness_tensor = coskewness(numpy_returns)
+    cokurtosis_tensor = cokurtosis(numpy_returns)
 
     portfolio_hubo = HigherOrderPortfolioQAOA(stocks=stocks,
                                             prices_now=prices_now,
@@ -119,6 +118,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     continuous_variables_solution_unconstrained = None
 
     if coskewness_tensor is not None and cokurtosis_tensor is not None:
+        
         weights, allocation, value, left_overs = portfolio_hubo.solve_with_continuous_variables_unconstrained()
 
         continuous_variables_solution_unconstrained = {
@@ -128,7 +128,6 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
             "left_overs": left_overs
         }
     try:
-        raise Exception("Testing")
         (
             smallest_eigenvalues, 
             smallest_bitstrings, 
@@ -141,6 +140,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
         ) = portfolio_hubo.solve_exactly()
 
     except Exception as e:
+
         print(f"Error: {e}")
         print("Trying different classical eigenvalue solver")
 
