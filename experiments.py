@@ -127,48 +127,49 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
             "value": value,
             "left_overs": left_overs
         }
-    try:
-        (
-            smallest_eigenvalues, 
-            smallest_bitstrings, 
-            first_excited_energy, 
-            optimized_portfolio, 
-            second_optimized_portfolio,
-            eigenvalues,
-            result1, 
-            result2
-        ) = portfolio_hubo.solve_exactly()
+    if False:
+        try:
+            (
+                smallest_eigenvalues, 
+                smallest_bitstrings, 
+                first_excited_energy, 
+                optimized_portfolio, 
+                second_optimized_portfolio,
+                eigenvalues,
+                result1, 
+                result2
+            ) = portfolio_hubo.solve_exactly()
 
-    except Exception as e:
+        except Exception as e:
 
-        print(f"Error: {e}")
-        print("Trying different classical eigenvalue solver")
+            print(f"Error: {e}")
+            print("Trying different classical eigenvalue solver")
 
-        (
-            smallest_eigenvalues, 
-            smallest_bitstrings, 
-            first_excited_energy, 
-            optimized_portfolio, 
-            second_optimized_portfolio,
-            eigenvalues,
-            result1, 
-            result2
-        ) = portfolio_hubo.solve_exactly_with_lobpcg()
+            (
+                smallest_eigenvalues, 
+                smallest_bitstrings, 
+                first_excited_energy, 
+                optimized_portfolio, 
+                second_optimized_portfolio,
+                eigenvalues,
+                result1, 
+                result2
+            ) = portfolio_hubo.solve_exactly_with_lobpcg()
 
-    exact_solution = {
-        "smallest_eigenvalues": smallest_eigenvalues,
-        "smallest_bitstrings": ["".join([str(i) for i in bits]) for bits in smallest_bitstrings],
-        "first_excited_energy": first_excited_energy,
-        "optimized_portfolio": optimized_portfolio,
-        "second_optimized_portfolio": second_optimized_portfolio,
-        "spectrum": eigenvalues,
-        "result_with_budget": result1,
-        "result_with_budget_excited": result2
-    }
+        exact_solution = {
+            "smallest_eigenvalues": smallest_eigenvalues,
+            "smallest_bitstrings": ["".join([str(i) for i in bits]) for bits in smallest_bitstrings],
+            "first_excited_energy": first_excited_energy,
+            "optimized_portfolio": optimized_portfolio,
+            "second_optimized_portfolio": second_optimized_portfolio,
+            "spectrum": eigenvalues,
+            "result_with_budget": result1,
+            "result_with_budget_excited": result2
+        }
 
-    for key, value in exact_solution.items():
-        if key != "spectrum":
-            print(f"{key}: {value}")
+        for key, value in exact_solution.items():
+            if key != "spectrum":
+                print(f"{key}: {value}")
     
     if classical_optimizer == "CMAES":
     
@@ -232,7 +233,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     results_for_experiment["hyperparams"] = hyperparams
     results_for_experiment["continuous_variables_solution"] = continuous_variables_solution
     results_for_experiment["continuous_variables_solution_unconstrained"] = continuous_variables_solution_unconstrained
-    results_for_experiment["exact_solution"] = exact_solution
+    #results_for_experiment["exact_solution"] = exact_solution
     results_for_experiment["qaoa_solution"] = qaoa_solution
 
     # Add to existing_results
