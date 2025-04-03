@@ -3,9 +3,9 @@
 #SBATCH --output=portfolio_opt_%A_%a.out
 #SBATCH --error=portfolio_opt_%A_%a.err
 #SBATCH --time=24:00:00
-#SBATCH --mem-per-cpu=6000MB
+#SBATCH --mem-per-cpu=5000MB
 #SBATCH --cpus-per-task=1
-#SBATCH --array=70-79
+#SBATCH --array=40-49
 
 echo "Running job array ${SLURM_ARRAY_TASK_ID} on $(hostname)"
 echo "Starting at $(date)"
