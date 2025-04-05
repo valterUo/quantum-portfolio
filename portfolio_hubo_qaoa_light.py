@@ -152,7 +152,9 @@ class HigherOrderPortfolioQAOA:
     
     def get_layers(self):
         return self.layers
-
+    
+    def get_init_params(self):
+        return self.init_params
 
     def construct_cost_hubo_int(self):
         for i in range(self.num_assets):
@@ -362,14 +364,14 @@ class HigherOrderPortfolioQAOA:
             qml.qaoa.cost_layer(gamma, cost_hamiltonian)
             qml.qaoa.mixer_layer(alpha, mixer_hamiltonian)
         
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def qaoa_circuit(params):
             for wire in range(self.n_qubits):
                 qml.Hadamard(wires=wire)
             qml.layer(qaoa_layer, self.layers, params[0], params[1])
             return qml.expval(cost_hamiltonian)
         
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def qaoa_probs_circuit(params):
             for wire in range(self.n_qubits):
                 qml.Hadamard(wires=wire)
@@ -386,11 +388,11 @@ class HigherOrderPortfolioQAOA:
         qaoa_circuit, qaoa_probs_circuit = self.get_QAOA_circuits()
         allowed_gates = ["CNOT", "RZ", "RX", "Hadamard"]
         dispatched_transform = qml.transform(replace_h_rz_h_with_rx)
-        qaoa_circuit = compile(qaoa_circuit, basis_set = allowed_gates)
-        qaoa_circuit = compile(qaoa_circuit, pipeline = [dispatched_transform])
+        qaoa_circuit = qml.compile(qaoa_circuit, basis_set = allowed_gates)
+        qaoa_circuit = qml.compile(qaoa_circuit, pipeline = [dispatched_transform])
 
-        qaoa_probs_circuit = compile(qaoa_probs_circuit, basis_set = allowed_gates)
-        qaoa_probs_circuit = compile(qaoa_probs_circuit, pipeline = [dispatched_transform])
+        qaoa_probs_circuit = qml.compile(qaoa_probs_circuit, basis_set = allowed_gates)
+        qaoa_probs_circuit = qml.compile(qaoa_probs_circuit, pipeline = [dispatched_transform])
 
         return qaoa_circuit, qaoa_probs_circuit
     
