@@ -30,9 +30,9 @@ with open("experiments_data.json", "r") as f:
 #    'dogleg', 'trust-ncg', 'trust-krylov', 'trust-exact'
 # Non-scipy optimizers:
 #    'CMAES' (requires cma package to be installed)
-# Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'L-BFGS-B'
+# Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'Nelder-Mead', 'L-BFGS-B'
 
-classical_optimizer = "Nelder-Mead"
+classical_optimizer = "Powell"
 
 output_file = f"portfolio_optimization_results_batch_{classical_optimizer}_{args.batch_num}.json"
 
