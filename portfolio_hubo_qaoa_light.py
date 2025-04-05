@@ -746,7 +746,7 @@ class HigherOrderPortfolioQAOA:
         # Set maximum iterations based on problem size
         maxiter = 10000
         if self.n_qubits > 13:
-            maxiter = 5000
+            maxiter = 2500
         
         # Setup quantum device
         dev = qml.device('default.qubit', wires=self.n_qubits)
