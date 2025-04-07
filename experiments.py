@@ -32,7 +32,7 @@ with open("experiments_data.json", "r") as f:
 #    'CMAES' (requires cma package to be installed)
 # Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'Nelder-Mead', 'L-BFGS-B'
 
-classical_optimizer = "Powell"
+classical_optimizer = "L-BFGS-B"
 
 output_file = f"portfolio_optimization_results_batch_{classical_optimizer}_{args.batch_num}.json"
 
