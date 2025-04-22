@@ -32,7 +32,7 @@ with open("experiments_data.json", "r") as f:
 #    'CMAES' (requires cma package to be installed)
 # Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'Nelder-Mead', 'L-BFGS-B'
 
-classical_optimizer = "L-BFGS-B"
+classical_optimizer = "CMAES"
 
 output_file = f"portfolio_optimization_results_batch_{classical_optimizer}_{args.batch_num}.json"
 
@@ -78,6 +78,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     end = experiment["end"]
     risk_aversion = 0.1
     max_qubits = 15
+    lambda_budget = 10
     budget = experiment["budget"]
     print(f"Budget: {budget}")
 
@@ -102,7 +103,8 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
                                             cokurtosis_tensor=cokurtosis_tensor,
                                             log_encoding=True,
                                             risk_aversion=risk_aversion,
-                                            strict_budget_constraint=False)
+                                            strict_budget_constraint=False,
+                                            lambda_budget=lambda_budget)
     
     assets_to_qubits = portfolio_hubo.get_assets_to_qubits()
     
@@ -127,7 +129,7 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
             "value": value,
             "left_overs": left_overs
         }
-    if False:
+    if True:
         try:
             (
                 smallest_eigenvalues, 

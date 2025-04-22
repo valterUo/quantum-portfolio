@@ -62,7 +62,8 @@ class HigherOrderPortfolioQAOA:
                  risk_aversion = 3, 
                  mixer = "x", 
                  log_encoding = False,
-                 strict_budget_constraint = False):
+                 strict_budget_constraint = False,
+                 lambda_budget = 1):
         # Implementation assumes that stocks and other data are ordered to match
         self.stocks = stocks
         self.expected_returns = expected_returns
@@ -121,12 +122,10 @@ class HigherOrderPortfolioQAOA:
         #print("Constructing cost hubo with integer variables")
         self.construct_cost_hubo_int()
 
-        scaler = 1 #sum([abs(v) for v in self.cost_hubo_int.values()])
-
         if strict_budget_constraint:
-            self.budget_constraint = self.construct_budget_constraint_strict(scaler=scaler)
+            self.budget_constraint = self.construct_budget_constraint_strict(scaler=lambda_budget)
         else:
-            self.budget_constraint = self.construct_budget_constraint(scaler=scaler)
+            self.budget_constraint = self.construct_budget_constraint(scaler=lambda_budget)
 
         print("Total number of qubits: ", self.n_qubits)
         assert max_qubits >= self.n_qubits, "Number of qubits exceeds the maximum number of qubits"
