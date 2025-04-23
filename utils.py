@@ -7,6 +7,42 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
+def extract_from_latex(latex_source):
+        """
+        Extract characters from each line starting with '\nghost' up to the tenth '&' character.
+        
+        Args:
+            latex_source (str): The LaTeX source code
+            
+        Returns:
+            list: Lines extracted according to the specified rule
+        """
+        depth = 100
+        extracted_lines = []
+        
+        # Split the latex source into lines
+        lines = latex_source.split('\n')
+        
+        # Process each line
+        for line in lines:
+            if line.strip().startswith('\\nghost'):
+                # Count the occurrences of '&'
+                amp_positions = [pos for pos, char in enumerate(line) if char == '&']
+                
+                # Check if there are at least 10 '&' characters
+                if len(amp_positions) >= depth:
+                    # Extract up to the 10th '&'
+                    extracted_portion = line[:amp_positions[depth - 1]]
+                    extracted_lines.append(extracted_portion + '\\\ \n')
+                else:
+                    # If fewer than 10 '&' characters, take the whole line
+                    extracted_lines.append(line)
+            else:
+                extracted_lines.append(line + '\n')
+        
+        return extracted_lines
+
+
 
 def replace_h_rz_h_with_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     new_operations = []
@@ -123,7 +159,6 @@ def basis_vector_to_bitstring(basis_vector):
     assert np.sum(basis_vector) == 1, "Input must be a basis vector"
     index = np.argmax(basis_vector)
     num_qubits = max(int(np.log2(len(basis_vector))), 1)
-    print(num_qubits)
     bitstring = format(index, f'0{num_qubits}b')
     #bitstring = np.array(list(np.binary_repr(index).zfill(num_qubits)))
     bitstring = [int(i) for i in bitstring]
@@ -137,8 +172,6 @@ def bitstrings_to_optimized_portfolios(bitstrings, assets_to_qubits):
     for bitstring in bitstrings:
         portfolio = {}
         for asset, qubits in assets_to_qubits.items():
-            print(qubits)
-            print(bitstring)
             bits = [bitstring[q] for q in qubits]
             portfolio[asset] = bitstring_to_int(bits)
         for asset in assets_to_qubits.keys():

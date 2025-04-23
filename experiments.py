@@ -33,8 +33,9 @@ with open("experiments_data.json", "r") as f:
 # Order to try: 'COBYLA', 'SLSQP', 'Powell', 'CG', 'Nelder-Mead', 'L-BFGS-B'
 
 classical_optimizer = "CMAES"
+lambda_budget = 10
 
-output_file = f"portfolio_optimization_results_batch_{classical_optimizer}_{args.batch_num}.json"
+output_file = f"portfolio_optimization_batch_{classical_optimizer}_{lambda_budget}_{args.batch_num}.json"
 
 # Find files with portfolio_optimization_results_batch_ in the name
 previous_output_files = [f for f in os.listdir() if f"portfolio_optimization_results_batch_{classical_optimizer}" in f]
@@ -78,7 +79,6 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
     end = experiment["end"]
     risk_aversion = 0.1
     max_qubits = 15
-    lambda_budget = 10
     budget = experiment["budget"]
     print(f"Budget: {budget}")
 
@@ -229,13 +229,14 @@ for i, experiment in enumerate(experiments[start_idx:end_idx]):
         "layers": n_layers,
         "prices_now": {str(k): float(v) for k, v in prices_now.items()},
         "assets_to_qubits": {str(k): v for k, v in assets_to_qubits.items()},
-        "optimizer": classical_optimizer
+        "optimizer": classical_optimizer,
+        "lambda_budget": lambda_budget
     }
 
     results_for_experiment["hyperparams"] = hyperparams
     results_for_experiment["continuous_variables_solution"] = continuous_variables_solution
     results_for_experiment["continuous_variables_solution_unconstrained"] = continuous_variables_solution_unconstrained
-    #results_for_experiment["exact_solution"] = exact_solution
+    results_for_experiment["exact_solution"] = exact_solution
     results_for_experiment["qaoa_solution"] = qaoa_solution
 
     # Add to existing_results

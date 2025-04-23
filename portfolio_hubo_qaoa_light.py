@@ -12,41 +12,6 @@ from utils import basis_vector_to_bitstring, bitstrings_to_optimized_portfolios,
 
 np.random.seed(0)
 
-def extract_from_latex(latex_source):
-        """
-        Extract characters from each line starting with '\nghost' up to the tenth '&' character.
-        
-        Args:
-            latex_source (str): The LaTeX source code
-            
-        Returns:
-            list: Lines extracted according to the specified rule
-        """
-        depth = 100
-        extracted_lines = []
-        
-        # Split the latex source into lines
-        lines = latex_source.split('\n')
-        
-        # Process each line
-        for line in lines:
-            if line.strip().startswith('\\nghost'):
-                # Count the occurrences of '&'
-                amp_positions = [pos for pos, char in enumerate(line) if char == '&']
-                
-                # Check if there are at least 10 '&' characters
-                if len(amp_positions) >= depth:
-                    # Extract up to the 10th '&'
-                    extracted_portion = line[:amp_positions[depth - 1]]
-                    extracted_lines.append(extracted_portion + '\\\ \n')
-                else:
-                    # If fewer than 10 '&' characters, take the whole line
-                    extracted_lines.append(line)
-            else:
-                extracted_lines.append(line + '\n')
-        
-        return extracted_lines
-
 class HigherOrderPortfolioQAOA:
 
     def __init__(self, 
@@ -659,7 +624,7 @@ class HigherOrderPortfolioQAOA:
         if self.n_qubits > 13:
             maxiter = 300
         
-        dev = qml.device('default.qubit', wires=self.n_qubits)
+        dev = qml.device('lightning.qubit', wires=self.n_qubits)
         
         cost_hamiltonian = self.get_cost_hamiltonian()
         #complete_graph = nx.complete_graph(self.n_qubits)
